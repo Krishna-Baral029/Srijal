@@ -4,7 +4,7 @@ const config = {
     DEV_SERVER_URL: 'http://localhost:3000',
     
     // Production server URL - Your Render.com backend URL
-    PROD_SERVER_URL: 'https://srijal-7nrp.onrender.com',
+    PROD_SERVER_URL: 'https://srijal-kb9w.onrender.com',
     
     // Get the appropriate server URL
     get SERVER_URL() {
