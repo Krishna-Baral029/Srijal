@@ -7,13 +7,11 @@
 
 .contact-container {
     max-width: 800px;
-    margin: 120px auto 40px;
+    margin: 2rem auto;
     padding: 2rem;
-    background: rgba(17, 34, 64, 0.6);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(100, 255, 218, 0.1);
+    background: rgba(10, 25, 47, 0.2);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
 .contact-container h2 {
@@ -88,19 +86,18 @@
 }
 
 .form-group label {
-    color: #64ffda;
+    color: #ccd6f6;
     font-size: 1rem;
-    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
 }
 
 .form-group input,
 .form-group textarea {
     padding: 0.8rem;
-    background: rgba(10, 25, 47, 0.7);
-    border: 1px solid rgba(100, 255, 218, 0.2);
-    border-radius: 4px;
+    border: 1px solid #233554;
+    border-radius: 5px;
+    background: rgba(10, 25, 47, 0.2);
     color: #ccd6f6;
-    font-family: 'Outfit', sans-serif;
     font-size: 1rem;
     transition: all 0.3s ease;
 }
@@ -109,22 +106,17 @@
 .form-group textarea:focus {
     outline: none;
     border-color: #64ffda;
-    box-shadow: 0 0 10px rgba(100, 255, 218, 0.2);
+    box-shadow: 0 0 5px rgba(100, 255, 218, 0.3);
 }
 
 .form-group textarea {
-    min-height: 150px;
     resize: vertical;
+    min-height: 150px;
 }
 
 .form-group textarea:disabled {
-    background: rgba(10, 25, 47, 0.4);
+    color: #ccd6f6;
     cursor: not-allowed;
-    color: rgba(204, 214, 246, 0.5);
-}
-
-.form-group textarea:disabled::placeholder {
-    color: rgba(204, 214, 246, 0.5);
 }
 
 .error-message {
@@ -138,18 +130,22 @@
 #submitBtn {
     background: transparent;
     color: #64ffda;
-    padding: 0.8rem 1.5rem;
-    border: 2px solid #64ffda;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-family: 'Outfit', sans-serif;
+    border: 1px solid #64ffda;
+    padding: 1rem 2rem;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
     transition: all 0.3s ease;
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
     position: relative;
     overflow: hidden;
 }
 
-#submitBtn:hover:not(:disabled) {
+#submitBtn:hover {
     background: rgba(100, 255, 218, 0.1);
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(100, 255, 218, 0.2);
@@ -158,61 +154,41 @@
 #submitBtn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    border-color: rgba(100, 255, 218, 0.4);
-    color: rgba(100, 255, 218, 0.4);
+    transform: none;
+    box-shadow: none;
 }
 
 .form-message {
-    margin-top: 1rem;
-    padding: 1rem;
-    border-radius: 4px;
     text-align: center;
-    font-family: 'Outfit', sans-serif;
-}
-
-.form-message.success {
-    background: rgba(100, 255, 218, 0.1);
-    color: #64ffda;
-    border: 1px solid rgba(100, 255, 218, 0.3);
+    padding: 1rem;
+    border-radius: 5px;
+    font-size: 0.9rem;
 }
 
 .form-message.error {
     background: rgba(255, 107, 107, 0.1);
     color: #ff6b6b;
-    border: 1px solid rgba(255, 107, 107, 0.3);
+    border: 1px solid #ff6b6b;
 }
 
-.countdown-timer {
-    margin-top: 1rem;
-    padding: 1rem;
+.form-message.success {
     background: rgba(100, 255, 218, 0.1);
-    border-radius: 8px;
     color: #64ffda;
-    text-align: center;
-    font-family: 'Outfit', sans-serif;
-    font-size: 1rem;
-    display: none;
-    border: 1px solid rgba(100, 255, 218, 0.2);
-    animation: pulse 2s infinite;
+    border: 1px solid #64ffda;
 }
 
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(100, 255, 218, 0.2);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(100, 255, 218, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(100, 255, 218, 0);
-    }
+.countdown {
+    text-align: center;
+    color: #ccd6f6;
+    font-size: 0.9rem;
+    margin-top: 1rem;
 }
 
 /* Preserve desktop styles */
 @media screen and (min-width: 769px) {
     .contact-container {
         max-width: 800px;
-        margin: 120px auto 40px;
+        margin: 2rem auto;
     }
 
     .form-group input:hover,
@@ -249,7 +225,7 @@
         font-size: 16px;
     }
 
-    .countdown-timer {
+    .countdown {
         position: fixed;
         bottom: 70px;
         left: 0;

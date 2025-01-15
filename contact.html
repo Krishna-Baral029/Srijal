@@ -9,12 +9,12 @@
     <title>Contact Us - 'D'Krishna's Portfolio</title>
     
     <!-- Preload CSS files -->
-    <link rel="preload" href="/style.css" as="style">
-    <link rel="preload" href="/css/contact.css" as="style">
+    <link rel="preload" href="style.css" as="style">
+    <link rel="preload" href="css/contact.css" as="style">
     
     <!-- CSS files -->
-    <link rel="stylesheet" href="/style.css">
-    <link rel="stylesheet" href="/css/contact.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/contact.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Comfortaa:wght@400;500;600;700&display=swap">
 </head>
@@ -48,27 +48,29 @@
             <div class="form-group">
                 <label for="name">Name:</label>
                 <input type="text" id="name" name="name" required>
-                <span class="error-message" id="nameError">This field is required</span>
+                <span class="error-message" id="nameError">Please enter your name</span>
             </div>
             <div class="form-group">
                 <label for="email">Email:</label>
                 <input type="email" id="email" name="email" required>
-                <span class="error-message" id="emailError">This field is required</span>
+                <span class="error-message" id="emailError">Please enter a valid email</span>
             </div>
             <div class="form-group">
                 <label for="message">Message:</label>
-                <textarea id="message" name="message" required disabled></textarea>
-                <span class="error-message" id="messageError">This field is required</span>
+                <textarea id="message" name="message" required disabled placeholder="Please fill in name and email first"></textarea>
+                <span class="error-message" id="messageError">Please enter your message</span>
             </div>
             <div class="form-group">
                 <button type="submit" id="submitBtn">Send Message</button>
             </div>
             <div id="formMessage" class="form-message"></div>
-            <div id="countdownTimer" class="countdown-timer"></div>
+            <div id="countdown" class="countdown"></div>
         </form>
     </div>
 
-    <script>
+    <script type="module">
+        import config from './js/config.js';
+        
         let countdownInterval;
         let isWaitingPeriod = false;
         const messageBox = document.getElementById('message');
@@ -79,53 +81,7 @@
         const messageError = document.getElementById('messageError');
         const submitBtn = document.getElementById('submitBtn');
         const formMessage = document.getElementById('formMessage');
-        const countdownTimer = document.getElementById('countdownTimer');
-
-        // Check rate limit status on page load
-        async function checkRateLimitStatus() {
-            try {
-                const fingerprint = await generateFingerprint();
-                const { host, port } = await findServerPort();
-                
-                const response = await fetch(`http://${host}:${port}/api/check-status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ fingerprint })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to check rate limit status');
-                }
-
-                const data = await response.json();
-                
-                if (!data.canSendMessage) {
-                    formMessage.textContent = data.error;
-                    formMessage.className = 'form-message error';
-                    submitBtn.disabled = true;
-                    isWaitingPeriod = true;
-                    if (data.timeLeft) {
-                        updateCountdown(data.timeLeft.totalMs);
-                    }
-                } else {
-                    formMessage.textContent = 'You can send a message now!';
-                    formMessage.className = 'form-message success';
-                    setTimeout(() => {
-                        formMessage.textContent = '';
-                        formMessage.className = 'form-message';
-                    }, 3000);
-                }
-            } catch (error) {
-                console.error('Error checking rate limit:', error);
-                // Don't show any error, just let them try to submit
-                isWaitingPeriod = false;
-            }
-        }
-
-        // Check status when page loads
-        window.addEventListener('load', checkRateLimitStatus);
+        const countdownDisplay = document.getElementById('countdown');
 
         function validateEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -138,7 +94,6 @@
             nameError.style.display = name ? 'none' : 'block';
             emailError.style.display = email && validateEmail(email) ? 'none' : 'block';
             
-            // Enable/disable message box
             messageBox.disabled = !(name && email && validateEmail(email)) || isWaitingPeriod;
             
             if (messageBox.disabled) {
@@ -155,115 +110,12 @@
         // Add input event listeners
         nameInput.addEventListener('input', checkInputs);
         emailInput.addEventListener('input', checkInputs);
+        messageBox.addEventListener('input', () => {
+            messageError.style.display = messageBox.value.trim() ? 'none' : 'block';
+        });
         
         // Initial check
         checkInputs();
-
-        function updateCountdown(timeLeft) {
-            const countdownElement = document.getElementById('countdownTimer');
-            const submitBtn = document.getElementById('submitBtn');
-            const formMessage = document.getElementById('formMessage');
-            
-            if (!timeLeft) {
-                countdownElement.style.display = 'none';
-                submitBtn.disabled = false;
-                isWaitingPeriod = false;
-                messageBox.disabled = false;
-                messageBox.placeholder = 'Your message';
-                formMessage.textContent = 'You can send a message now!';
-                formMessage.className = 'form-message success';
-                setTimeout(() => {
-                    formMessage.textContent = '';
-                    formMessage.className = 'form-message';
-                }, 3000);
-                return;
-            }
-
-            function formatTime(ms) {
-                const hours = Math.floor(ms / (60 * 60 * 1000));
-                const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
-                const seconds = Math.floor((ms % (60 * 1000)) / 1000);
-                return `${hours} hours, ${minutes} minutes, and ${seconds} seconds`;
-            }
-
-            let remainingTime = timeLeft;
-            countdownElement.style.display = 'block';
-            submitBtn.disabled = true;
-            isWaitingPeriod = true;
-            messageBox.disabled = true;
-            messageBox.placeholder = 'Please wait for the countdown to finish';
-            
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-            }
-
-            function updateDisplay() {
-                if (remainingTime <= 0) {
-                    clearInterval(countdownInterval);
-                    countdownElement.style.display = 'none';
-                    submitBtn.disabled = false;
-                    isWaitingPeriod = false;
-                    messageBox.disabled = false;
-                    messageBox.placeholder = 'Your message';
-                    formMessage.textContent = 'You can send a message now!';
-                    formMessage.className = 'form-message success';
-                    setTimeout(() => {
-                        formMessage.textContent = '';
-                        formMessage.className = 'form-message';
-                    }, 3000);
-                    checkInputs();
-                    return;
-                }
-                
-                const timeString = formatTime(remainingTime);
-                countdownElement.textContent = `Please wait ${timeString} before sending another message`;
-                formMessage.textContent = `You can send another message in ${timeString}`;
-                remainingTime -= 1000;
-            }
-
-            // Initial update
-            updateDisplay();
-            // Update every second
-            countdownInterval = setInterval(updateDisplay, 1000);
-        }
-
-        // Function to find the active server port
-        async function findServerPort() {
-            const host = window.location.hostname;
-            const ports = [3000, 3001, 3002];
-            
-            console.log('Current host:', host);
-            
-            for (const port of ports) {
-                try {
-                    console.log(`Trying port ${port}...`);
-                    const response = await fetch(`http://${host}:${port}/health`, {
-                        mode: 'cors',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        console.log(`Successfully connected to port ${port}`);
-                        return { host, port };
-                    }
-                } catch (error) {
-                    console.log(`Error on port ${port}:`, error.message);
-                }
-            }
-            throw new Error('Could not connect to server. Please check your network connection.');
-        }
-
-        async function generateFingerprint() {
-            try {
-                return await generateBrowserFingerprint();
-            } catch (error) {
-                console.error('Failed to generate fingerprint:', error);
-                // Fallback to a simple timestamp-based ID
-                return Date.now().toString(16);
-            }
-        }
 
         document.getElementById('contactForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -288,76 +140,141 @@
                 return;
             }
 
-            // Show loading state
             submitBtn.disabled = true;
             submitBtn.textContent = 'Sending...';
-            formMessage.textContent = 'Preparing to send...';
+            formMessage.textContent = 'Sending your message...';
             formMessage.className = 'form-message';
 
             try {
-                // Generate fingerprint first
-                formMessage.textContent = 'Generating request ID...';
-                const fingerprint = await generateFingerprint();
-                
-                // Check server connection
-                formMessage.textContent = 'Checking server connection...';
-                const { host, port } = await findServerPort();
-                
-                // Send message
-                formMessage.textContent = 'Sending your message...';
-                console.log('Sending message to:', `http://${host}:${port}/api/contact`);
-                
-                const response = await fetch(`http://${host}:${port}/api/contact`, {
+                const response = await fetch(`${config.SERVER_URL}/api/contact`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
-                    mode: 'cors',
                     body: JSON.stringify({
                         name,
                         email,
-                        message,
-                        fingerprint
+                        message
                     })
                 });
 
-                const data = await response.json();
-                console.log('Server response:', data);
+                if (!response.ok) {
+                    throw new Error('Server error');
+                }
 
-                if (response.ok) {
+                const data = await response.json();
+                
+                if (data.success) {
                     formMessage.textContent = 'Message sent successfully!';
                     formMessage.className = 'form-message success';
-                    this.reset();
-                    checkInputs();
-                    
-                    // Start countdown timer immediately after successful submission
+                    nameInput.value = '';
+                    emailInput.value = '';
+                    messageBox.value = '';
                     isWaitingPeriod = true;
-                    messageBox.disabled = true;
-                    updateCountdown(12 * 60 * 60 * 1000); // 12 hours in milliseconds
+                    updateCountdown(data.timeLeft || 60);
                 } else {
-                    let errorMsg = data.error || 'Failed to send message. Please try again.';
-                    if (data.details) {
-                        errorMsg += ` (${data.details})`;
+                    throw new Error(data.message || 'Failed to send message');
+                }
+            } catch (error) {
+                formMessage.textContent = 'Failed to send message. Please try again later.';
+                formMessage.className = 'form-message error';
+                console.error('Error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+                checkInputs();
+            }
+        });
+
+        function updateCountdown(timeLeft) {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            if (timeLeft <= 0) {
+                isWaitingPeriod = false;
+                countdownDisplay.textContent = '';
+                checkInputs();
+                return;
+            }
+
+            isWaitingPeriod = true;
+            
+            const updateDisplay = () => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                countdownDisplay.textContent = `Please wait ${minutes}:${seconds.toString().padStart(2, '0')} before sending another message`;
+                timeLeft--;
+
+                if (timeLeft < 0) {
+                    clearInterval(countdownInterval);
+                    isWaitingPeriod = false;
+                    countdownDisplay.textContent = '';
+                    checkInputs();
+                }
+            };
+
+            updateDisplay();
+            countdownInterval = setInterval(updateDisplay, 1000);
+        }
+
+        // Function to find the active server port
+        async function findServerPort() {
+            try {
+                const response = await fetch(`${config.SERVER_URL}/api/check-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
-                    formMessage.textContent = errorMsg;
-                    formMessage.className = 'form-message error';
-                    
-                    if (data.timeLeft) {
+                });
+                
+                if (response.ok) {
+                    return config.SERVER_URL;
+                }
+            } catch (error) {
+                console.log('Error connecting to server:', error.message);
+            }
+            throw new Error('Could not connect to server. Please check your network connection.');
+        }
+
+        async function generateFingerprint() {
+            try {
+                return await generateBrowserFingerprint();
+            } catch (error) {
+                console.error('Failed to generate fingerprint:', error);
+                // Fallback to a simple timestamp-based ID
+                return Date.now().toString(16);
+            }
+        }
+
+        // Check rate limit status on page load
+        async function checkRateLimitStatus() {
+            try {
+                const fingerprint = await generateFingerprint();
+                
+                const response = await fetch(`${config.SERVER_URL}/api/check-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fingerprint })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.waiting) {
                         isWaitingPeriod = true;
-                        messageBox.disabled = true;
-                        updateCountdown(data.timeLeft.totalMs);
+                        updateCountdown(data.timeLeft);
                     }
                 }
             } catch (error) {
-                console.error('Client error:', error);
-                formMessage.textContent = error.message || 'Failed to send message. Please try again.';
-                formMessage.className = 'form-message error';
+                console.log('Rate limit check failed:', error);
+                // Don't show error to user, just continue
             }
+        }
 
-            // Reset button state
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Send Message';
+        window.addEventListener('load', async function() {
+            await checkRateLimitStatus();
         });
     </script>
     <script src="/js/fingerprint.js"></script>

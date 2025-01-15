@@ -12,6 +12,24 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Configure nodemailer transporter
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+// Verify email configuration
+transporter.verify((error, success) => {
+    if (error) {
+        console.error('Email configuration error:', error);
+    } else {
+        console.log('Email server is ready to send messages');
+    }
+});
+
 // Security Middleware with relaxed settings for local development
 app.use(helmet({
     contentSecurityPolicy: false,
@@ -346,36 +364,6 @@ app.post('/api/contact', checkRateLimit, async (req, res) => {
             success: false,
             error: 'Failed to send email. Please try again later.'
         });
-    }
-});
-
-// Email transporter setup
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    },
-    tls: {
-        rejectUnauthorized: false
-    },
-    debug: true,
-    logger: true
-});
-
-// Verify email configuration on startup
-transporter.verify(function(error, success) {
-    if (error) {
-        console.error('Email configuration error:', error);
-        console.error('Email settings:', {
-            user: process.env.EMAIL_USER,
-            host: 'smtp.gmail.com',
-            port: 465
-        });
-    } else {
-        console.log('Email server is ready to send messages');
     }
 });
 
