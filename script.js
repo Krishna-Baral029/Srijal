@@ -82,7 +82,34 @@ document.addEventListener('DOMContentLoaded', function() {
     if (contactForm) {
         const submitButton = contactForm.querySelector('button[type="submit"]');
         const formMessage = document.getElementById('formMessage');
-        let isSubmitting = false; // Flag to prevent multiple submissions
+        const messageInput = document.getElementById('message');
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+        let isSubmitting = false;
+
+        // Function to validate email
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        // Function to validate inputs and enable/disable message field
+        function validateInputs() {
+            const name = nameInput.value.trim();
+            const email = emailInput.value.trim();
+            const isEmailValid = validateEmail(email);
+
+            messageInput.disabled = !(name && email && isEmailValid) || isSubmitting;
+            messageInput.placeholder = isSubmitting ? 'Please wait for the cooldown to finish' : 
+                                    (!name || !email || !isEmailValid) ? 'Please fill in name and email first' : 
+                                    'Your message';
+        }
+
+        // Add input listeners
+        nameInput.addEventListener('input', validateInputs);
+        emailInput.addEventListener('input', validateInputs);
+
+        // Initial validation
+        validateInputs();
 
         // Function to update cooldown timer
         function updateCooldownTimer(timeLeft) {
@@ -93,6 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Send Message';
                 isSubmitting = false;
+                validateInputs();
                 return;
             }
 
@@ -102,12 +130,30 @@ document.addEventListener('DOMContentLoaded', function() {
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
 
+            // Format the time components to handle singular/plural
+            const hourText = hours === 1 ? 'hour' : 'hours';
+            const minuteText = minutes === 1 ? 'minute' : 'minutes';
+            const secondText = seconds === 1 ? 'second' : 'seconds';
+
+            // Create a readable time string
+            let timeString = '';
+            if (hours > 0) timeString += `${hours} ${hourText}`;
+            if (minutes > 0) timeString += timeString ? `, ${minutes} ${minuteText}` : `${minutes} ${minuteText}`;
+            if (seconds > 0 || (!hours && !minutes)) timeString += timeString ? `, and ${seconds} ${secondText}` : `${seconds} ${secondText}`;
+
             // Update the display with a more friendly message
             submitButton.disabled = true;
-            submitButton.textContent = 'Send Message';
-            formMessage.textContent = `You can send your next message in ${hours} hours, ${minutes} minutes, and ${seconds} seconds.`;
+            formMessage.textContent = `Please wait ${timeString} before sending another message.`;
             formMessage.style.color = '#64ffda';
             isSubmitting = true;
+            validateInputs();
+
+            // Update the timer every second
+            setTimeout(() => {
+                updateCooldownTimer({
+                    totalMs: timeLeft.totalMs - 1000
+                });
+            }, 1000);
         }
 
         // Function to check cooldown status
@@ -118,11 +164,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    credentials: 'include'
                 });
                 
                 const data = await response.json();
-                if (!data.canSendMessage) {
+                if (!data.canSendMessage && data.timeLeft) {
                     updateCooldownTimer(data.timeLeft);
                 }
             } catch (error) {
@@ -130,8 +177,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Check cooldown status immediately
+        // Check cooldown status immediately and every minute
         checkCooldownStatus();
+        setInterval(checkCooldownStatus, 60000);
 
         contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -140,12 +188,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const name = document.getElementById('name').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const message = document.getElementById('message').value.trim();
+            const name = nameInput.value.trim();
+            const email = emailInput.value.trim();
+            const message = messageInput.value.trim();
 
             if (!name || !email || !message) {
                 formMessage.textContent = 'Please fill in all fields';
+                formMessage.style.color = 'red';
+                return;
+            }
+
+            if (!validateEmail(email)) {
+                formMessage.textContent = 'Please enter a valid email address';
                 formMessage.style.color = 'red';
                 return;
             }
@@ -154,7 +208,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 isSubmitting = true;
                 submitButton.disabled = true;
                 submitButton.textContent = 'Sending...';
-                formMessage.textContent = '';
+                formMessage.textContent = 'Sending your message...';
+                formMessage.style.color = '#64ffda';
+                validateInputs();
 
                 const baseUrl = await getApiBaseUrl();
                 const response = await fetch(`${baseUrl}/api/contact`, {
@@ -181,10 +237,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error:', error);
                 formMessage.textContent = error.message || 'Failed to send message. Please try again later.';
                 formMessage.style.color = 'red';
+                isSubmitting = false;
                 submitButton.disabled = false;
                 submitButton.textContent = 'Send Message';
-                isSubmitting = false;
             }
+            validateInputs();
         });
     }
 });
