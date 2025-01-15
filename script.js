@@ -102,9 +102,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
 
-            // Update the display
+            // Update the display with a more friendly message
             submitButton.disabled = true;
-            submitButton.textContent = `Wait ${hours}h ${minutes}m ${seconds}s`;
+            submitButton.textContent = 'Send Message';
+            formMessage.textContent = `You can send your next message in ${hours} hours, ${minutes} minutes, and ${seconds} seconds.`;
+            formMessage.style.color = '#64ffda';
             isSubmitting = true;
         }
 
