@@ -152,8 +152,9 @@
 }
 
 #submitBtn:disabled {
-    opacity: 0.6;
+    opacity: 0.7;
     cursor: not-allowed;
+    background: rgba(100, 255, 218, 0.05);
     transform: none;
     box-shadow: none;
 }
@@ -163,6 +164,9 @@
     padding: 1rem;
     border-radius: 5px;
     font-size: 0.9rem;
+    margin-top: 1rem;
+    word-wrap: break-word;
+    line-height: 1.5;
 }
 
 .form-message.error {
@@ -179,9 +183,12 @@
 
 .countdown {
     text-align: center;
-    color: #ccd6f6;
+    color: #64ffda;
     font-size: 0.9rem;
     margin-top: 1rem;
+    padding: 0.5rem;
+    line-height: 1.5;
+    word-wrap: break-word;
 }
 
 /* Preserve desktop styles */
@@ -210,50 +217,45 @@
 /* Mobile styles - Only apply below 768px */
 @media screen and (max-width: 768px) {
     .contact-container {
-        margin: 80px 20px 100px;
+        margin: 1rem;
         padding: 1.5rem;
+        width: auto;
     }
 
-    .contact-form {
-        gap: 1.2rem;
+    .contact-container h2 {
+        font-size: 2rem;
+        margin-bottom: 2rem;
     }
 
     .form-group input,
     .form-group textarea {
-        -webkit-appearance: none;
-        appearance: none;
-        font-size: 16px;
+        font-size: 16px; /* Prevents iOS zoom */
+        padding: 0.7rem;
     }
 
+    .form-message,
     .countdown {
-        position: fixed;
-        bottom: 70px;
-        left: 0;
-        width: 100%;
-        background: rgba(10, 25, 47, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 8px;
-        font-size: 0.9rem;
-        text-align: center;
-        z-index: 999;
+        font-size: 0.85rem;
+        padding: 0.8rem;
+        margin-top: 0.8rem;
     }
 
-    .form-message {
-        position: fixed;
-        top: 80px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 90%;
-        z-index: 1000;
-        padding: 12px;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        text-align: center;
+    #submitBtn {
+        width: 100%;
+        max-width: none;
+        padding: 0.8rem 1.5rem;
     }
 
-    button[type="submit"] {
-        width: 100%;
-        margin-top: 1rem;
+    .form-group textarea {
+        min-height: 120px;
+    }
+
+    .form-group label {
+        font-size: 0.9rem;
+    }
+
+    .error-message {
+        font-size: 0.75rem;
     }
 }
 
@@ -291,5 +293,23 @@
 @supports (padding: max(0px)) {
     .contact-container {
         padding-bottom: max(2rem, env(safe-area-inset-bottom));
+    }
+}
+
+/* Disabled state styles */
+.form-group input:disabled,
+.form-group textarea:disabled {
+    background: rgba(10, 25, 47, 0.4);
+    color: #8892b0;
+    border-color: #233554;
+    cursor: not-allowed;
+}
+
+/* Focus styles for mobile */
+@media (hover: none) {
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: #64ffda;
+        box-shadow: 0 0 3px rgba(100, 255, 218, 0.2);
     }
 }
