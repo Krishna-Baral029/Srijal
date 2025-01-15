@@ -71,11 +71,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Get the base API URL
-    function getApiBaseUrl() {
-        const host = window.location.hostname;
-        const port = 3000; 
-        return `http://${host}:${port}`;
+    // Get the base API URL from config
+    async function getApiBaseUrl() {
+        const { default: config } = await import('./js/config.js');
+        return config.SERVER_URL;
     }
 
     // Form submission with email functionality
@@ -100,41 +99,28 @@ document.addEventListener('DOMContentLoaded', function() {
             // Calculate time components
             let totalSeconds = Math.ceil(timeLeft.totalMs / 1000);
             const hours = Math.floor(totalSeconds / 3600);
-            totalSeconds %= 3600;
-            const minutes = Math.floor(totalSeconds / 60);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
 
+            // Update the display
             submitButton.disabled = true;
             submitButton.textContent = `Wait ${hours}h ${minutes}m ${seconds}s`;
-
-            if (formMessage) {
-                formMessage.textContent = `You can send another message in ${hours} hours, ${minutes} minutes, and ${seconds} seconds`;
-                formMessage.style.color = '#64ffda'; 
-            }
-
-            if (timeLeft.totalMs > 1000) {
-                setTimeout(() => {
-                    updateCooldownTimer({
-                        totalMs: timeLeft.totalMs - 1000
-                    });
-                }, 1000);
-            } else {
-                updateCooldownTimer({ totalMs: 0 });
-            }
+            isSubmitting = true;
         }
 
-        // Check cooldown status on page load
+        // Function to check cooldown status
         async function checkCooldownStatus() {
             try {
-                const response = await fetch(`${window.location.origin}/api/check-status`, {
+                const baseUrl = await getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/api/check-status`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 });
-
+                
                 const data = await response.json();
-                if (!data.canSendMessage && data.timeLeft) {
+                if (!data.canSendMessage) {
                     updateCooldownTimer(data.timeLeft);
                 }
             } catch (error) {
@@ -147,77 +133,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
         contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-
-            // Prevent multiple submissions
-            if (isSubmitting || submitButton.disabled) {
+            
+            if (isSubmitting) {
                 return;
             }
 
-            const formData = {
-                name: this.querySelector('input[name="name"]').value.trim(),
-                email: this.querySelector('input[name="email"]').value.trim(),
-                message: this.querySelector('textarea[name="message"]').value.trim()
-            };
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const message = document.getElementById('message').value.trim();
 
-            // Basic validation
-            if (!formData.name || !formData.email || !formData.message) {
-                if (formMessage) {
-                    formMessage.textContent = 'Please fill in all fields';
-                    formMessage.style.color = '#ff6b6b';
-                }
+            if (!name || !email || !message) {
+                formMessage.textContent = 'Please fill in all fields';
+                formMessage.style.color = 'red';
                 return;
-            }
-
-            // Set submitting flag and disable button
-            isSubmitting = true;
-            submitButton.disabled = true;
-            submitButton.textContent = 'Sending...';
-
-            if (formMessage) {
-                formMessage.textContent = 'Sending message...';
-                formMessage.style.color = '#64ffda';
             }
 
             try {
-                const response = await fetch(`${window.location.origin}/api/contact`, {
+                isSubmitting = true;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Sending...';
+                formMessage.textContent = '';
+
+                const baseUrl = await getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/api/contact`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify({ name, email, message })
                 });
 
                 const data = await response.json();
 
-                if (response.ok && data.success) {
-                    this.reset();
-                    if (formMessage) {
-                        formMessage.textContent = 'Message sent successfully!';
-                        formMessage.style.color = '#64ffda';
-                    }
+                if (data.success) {
+                    formMessage.textContent = 'Message sent successfully!';
+                    formMessage.style.color = 'green';
+                    contactForm.reset();
                     if (data.timeLeft) {
                         updateCooldownTimer(data.timeLeft);
                     }
-                } else if (response.status === 429 && data.timeLeft) {
-                    // Rate limit hit
-                    updateCooldownTimer(data.timeLeft);
                 } else {
                     throw new Error(data.error || 'Failed to send message');
                 }
             } catch (error) {
-                console.error('Error sending message:', error);
-                
-                if (formMessage) {
-                    if (error.message.includes('Failed to fetch')) {
-                        formMessage.textContent = 'Could not connect to server. Please check your network connection.';
-                    } else {
-                        formMessage.textContent = error.message || 'Could not send message. Please try again.';
-                    }
-                    formMessage.style.color = '#ff6b6b';
-                }
-                
-                submitButton.textContent = 'Send Message';
+                console.error('Error:', error);
+                formMessage.textContent = error.message || 'Failed to send message. Please try again later.';
+                formMessage.style.color = 'red';
                 submitButton.disabled = false;
+                submitButton.textContent = 'Send Message';
                 isSubmitting = false;
             }
         });
