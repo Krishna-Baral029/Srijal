@@ -247,18 +247,50 @@ function checkAccessToken(req, res, next) {
 // Apply token check to all routes
 app.use(checkAccessToken);
 
-// Store rate limit data
-const rateLimits = new Map();
+// Store rate limit data in a file
+const RATE_LIMIT_FILE = path.join(__dirname, 'rate-limits.json');
+
+// Load existing rate limits from file
+let rateLimits = new Map();
+try {
+    if (fs.existsSync(RATE_LIMIT_FILE)) {
+        const data = JSON.parse(fs.readFileSync(RATE_LIMIT_FILE, 'utf8'));
+        rateLimits = new Map(Object.entries(data));
+        
+        // Clean up expired entries
+        const now = Date.now();
+        const cooldownMs = 12 * 60 * 60 * 1000;
+        for (const [deviceId, timestamp] of rateLimits.entries()) {
+            if (now - timestamp > cooldownMs) {
+                rateLimits.delete(deviceId);
+            }
+        }
+    }
+} catch (error) {
+    console.error('Error loading rate limits:', error);
+}
+
+// Save rate limits to file
+function saveRateLimits() {
+    try {
+        const data = Object.fromEntries(rateLimits);
+        fs.writeFileSync(RATE_LIMIT_FILE, JSON.stringify(data, null, 2));
+    } catch (error) {
+        console.error('Error saving rate limits:', error);
+    }
+}
 
 // Rate limit middleware
 function checkRateLimit(req, res, next) {
     const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'] || '';
+    const deviceId = `${ip}-${userAgent.substring(0, 50)}`; // Use IP + UserAgent as identifier
     const now = Date.now();
     const cooldownHours = 12;
     const cooldownMs = cooldownHours * 60 * 60 * 1000;
 
-    if (rateLimits.has(ip)) {
-        const lastSent = rateLimits.get(ip);
+    if (rateLimits.has(deviceId)) {
+        const lastSent = rateLimits.get(deviceId);
         const timeLeft = lastSent + cooldownMs - now;
 
         if (timeLeft > 0) {
@@ -285,12 +317,14 @@ function checkRateLimit(req, res, next) {
 // Check rate limit status endpoint
 app.post('/api/check-status', (req, res) => {
     const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'] || '';
+    const deviceId = `${ip}-${userAgent.substring(0, 50)}`; // Use IP + UserAgent as identifier
     const now = Date.now();
     const cooldownHours = 12;
     const cooldownMs = cooldownHours * 60 * 60 * 1000;
 
-    if (rateLimits.has(ip)) {
-        const lastSent = rateLimits.get(ip);
+    if (rateLimits.has(deviceId)) {
+        const lastSent = rateLimits.get(deviceId);
         const timeLeft = lastSent + cooldownMs - now;
 
         if (timeLeft > 0) {
@@ -349,12 +383,18 @@ app.post('/api/contact', checkRateLimit, async (req, res) => {
         
         // Update rate limit after successful send
         const ip = req.ip || req.connection.remoteAddress;
-        rateLimits.set(ip, Date.now());
+        const userAgent = req.headers['user-agent'] || '';
+        const deviceId = `${ip}-${userAgent.substring(0, 50)}`;
+        rateLimits.set(deviceId, Date.now());
+        saveRateLimits(); // Save to file after updating
 
         res.status(200).json({
             success: true,
             message: 'Email sent successfully',
             timeLeft: {
+                hours: 12,
+                minutes: 0,
+                seconds: 0,
                 totalMs: 12 * 60 * 60 * 1000
             }
         });
@@ -366,6 +406,24 @@ app.post('/api/contact', checkRateLimit, async (req, res) => {
         });
     }
 });
+
+// Clean up expired rate limits periodically
+setInterval(() => {
+    const now = Date.now();
+    const cooldownMs = 12 * 60 * 60 * 1000;
+    let changed = false;
+    
+    for (const [deviceId, timestamp] of rateLimits.entries()) {
+        if (now - timestamp > cooldownMs) {
+            rateLimits.delete(deviceId);
+            changed = true;
+        }
+    }
+    
+    if (changed) {
+        saveRateLimits();
+    }
+}, 60 * 60 * 1000); // Clean up every hour
 
 // Mobile-specific endpoint
 app.get('/mobile', (req, res) => {
