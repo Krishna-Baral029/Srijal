@@ -213,8 +213,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
 
                 if (data.success) {
-                    formMessage.innerHTML = 'Message Sent Successfully ';
+                    formMessage.innerHTML = 'Message Sent Successfully ✅ <i class="fas fa-check-circle success-icon"></i>';
                     formMessage.style.color = '#64ffda';
+                    formMessage.classList.add('success-animation');
                     submitButton.textContent = 'Send Message';
                     submitButton.disabled = true;
                     contactForm.reset();
