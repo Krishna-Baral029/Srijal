@@ -224,9 +224,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
 
                 if (data.success) {
-                    formMessage.textContent = 'Message sent successfully!';
+                    formMessage.textContent = 'Message sent successfully! ✅';
                     formMessage.style.color = 'green';
-                    submitButton.textContent = 'Message Sent';
+                    submitButton.textContent = 'Message Sent Successfully';
                     contactForm.reset();
                     if (data.timeLeft) {
                         updateCooldownTimer(data.timeLeft);
