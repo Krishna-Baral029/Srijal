@@ -71,3 +71,9 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
+
+# SQLite database
+*.db
+*.sqlite
+*.sqlite3
+ratelimit.db

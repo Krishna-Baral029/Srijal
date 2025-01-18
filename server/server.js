@@ -8,6 +8,8 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database('./rate_limits.db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -247,113 +249,42 @@ function checkAccessToken(req, res, next) {
 // Apply token check to all routes
 app.use(checkAccessToken);
 
-// Store rate limit data in a file
-const RATE_LIMIT_FILE = path.join(__dirname, 'rate-limits.json');
-
-// Load existing rate limits from file
-let rateLimits = new Map();
-try {
-    if (fs.existsSync(RATE_LIMIT_FILE)) {
-        const data = JSON.parse(fs.readFileSync(RATE_LIMIT_FILE, 'utf8'));
-        rateLimits = new Map(Object.entries(data));
-        
-        // Clean up expired entries
-        const now = Date.now();
-        const cooldownMs = 12 * 60 * 60 * 1000;
-        for (const [deviceId, timestamp] of rateLimits.entries()) {
-            if (now - timestamp > cooldownMs) {
-                rateLimits.delete(deviceId);
-            }
-        }
-    }
-} catch (error) {
-    console.error('Error loading rate limits:', error);
-}
-
-// Save rate limits to file
-function saveRateLimits() {
-    try {
-        const data = Object.fromEntries(rateLimits);
-        fs.writeFileSync(RATE_LIMIT_FILE, JSON.stringify(data, null, 2));
-    } catch (error) {
-        console.error('Error saving rate limits:', error);
-    }
-}
+// Rate limiting with SQLite
+const { generateDeviceFingerprint, checkRateLimit, recordAttempt } = require('./database');
 
 // Rate limit middleware
-function checkRateLimit(req, res, next) {
-    const ip = req.ip || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'] || '';
-    const deviceId = `${ip}-${userAgent.substring(0, 50)}`; // Use IP + UserAgent as identifier
-    const now = Date.now();
-    const cooldownHours = 12;
-    const cooldownMs = cooldownHours * 60 * 60 * 1000;
+async function rateLimitMiddleware(req, res, next) {
+    try {
+        const deviceId = generateDeviceFingerprint(req);
+        const { canSend, timeLeft, attempts } = await checkRateLimit(deviceId);
 
-    if (rateLimits.has(deviceId)) {
-        const lastSent = rateLimits.get(deviceId);
-        const timeLeft = lastSent + cooldownMs - now;
-
-        if (timeLeft > 0) {
+        if (!canSend) {
             const hours = Math.floor(timeLeft / (60 * 60 * 1000));
             const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-            const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
+            
+            let message = `Please wait ${hours}h ${minutes}m before sending another message`;
+            if (attempts > 3) {
+                message = `Too many attempts detected. Cooldown extended. ${message}`;
+            }
 
+            await recordAttempt(req, false);
             return res.status(429).json({
                 success: false,
-                error: `Please wait before sending another message`,
-                timeLeft: {
-                    hours,
-                    minutes,
-                    seconds,
-                    totalMs: timeLeft
-                }
+                error: message,
+                timeLeft,
+                attempts: attempts + 1
             });
         }
-    }
 
-    next();
+        next();
+    } catch (error) {
+        console.error('Rate limit error:', error);
+        next(error);
+    }
 }
 
-// Check rate limit status endpoint
-app.post('/api/check-status', (req, res) => {
-    const ip = req.ip || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'] || '';
-    const deviceId = `${ip}-${userAgent.substring(0, 50)}`; // Use IP + UserAgent as identifier
-    const now = Date.now();
-    const cooldownHours = 12;
-    const cooldownMs = cooldownHours * 60 * 60 * 1000;
-
-    if (rateLimits.has(deviceId)) {
-        const lastSent = rateLimits.get(deviceId);
-        const timeLeft = lastSent + cooldownMs - now;
-
-        if (timeLeft > 0) {
-            const hours = Math.floor(timeLeft / (60 * 60 * 1000));
-            const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-            const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
-
-            return res.json({
-                canSendMessage: false,
-                timeLeft: {
-                    hours,
-                    minutes,
-                    seconds,
-                    totalMs: timeLeft
-                }
-            });
-        }
-    }
-
-    res.json({
-        canSendMessage: true,
-        timeLeft: null
-    });
-});
-
-// Email endpoint with rate limiting
-app.post('/api/contact', checkRateLimit, async (req, res) => {
-    console.log('Received contact request:', req.body);
-    
+// Apply rate limit middleware to contact endpoint
+app.post('/api/contact', rateLimitMiddleware, async (req, res) => {
     try {
         const { name, email, message } = req.body;
 
@@ -363,8 +294,6 @@ app.post('/api/contact', checkRateLimit, async (req, res) => {
                 error: 'Please provide all required fields'
             });
         }
-
-        console.log('Sending email with data:', { name, email, messageLength: message.length });
 
         const mailOptions = {
             from: process.env.EMAIL_USER,
@@ -381,49 +310,38 @@ app.post('/api/contact', checkRateLimit, async (req, res) => {
 
         await transporter.sendMail(mailOptions);
         
-        // Update rate limit after successful send
-        const ip = req.ip || req.connection.remoteAddress;
-        const userAgent = req.headers['user-agent'] || '';
-        const deviceId = `${ip}-${userAgent.substring(0, 50)}`;
-        rateLimits.set(deviceId, Date.now());
-        saveRateLimits(); // Save to file after updating
+        // Record successful attempt
+        await recordAttempt(req, true);
 
         res.status(200).json({
             success: true,
-            message: 'Email sent successfully',
-            timeLeft: {
-                hours: 12,
-                minutes: 0,
-                seconds: 0,
-                totalMs: 12 * 60 * 60 * 1000
-            }
+            message: 'Message sent successfully'
         });
     } catch (error) {
         console.error('Error sending email:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to send email. Please try again later.'
+            error: 'Failed to send message'
         });
     }
 });
 
-// Clean up expired rate limits periodically
-setInterval(() => {
-    const now = Date.now();
-    const cooldownMs = 12 * 60 * 60 * 1000;
-    let changed = false;
-    
-    for (const [deviceId, timestamp] of rateLimits.entries()) {
-        if (now - timestamp > cooldownMs) {
-            rateLimits.delete(deviceId);
-            changed = true;
-        }
+// Graceful shutdown
+function cleanup() {
+    console.log('Server shutting down...');
+    if (db) {
+        db.close(() => {
+            console.log('Database connection closed.');
+            process.exit(0);
+        });
+    } else {
+        process.exit(0);
     }
-    
-    if (changed) {
-        saveRateLimits();
-    }
-}, 60 * 60 * 1000); // Clean up every hour
+}
+
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
+process.on('exit', cleanup);
 
 // Mobile-specific endpoint
 app.get('/mobile', (req, res) => {
