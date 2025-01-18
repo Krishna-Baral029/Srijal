@@ -114,46 +114,34 @@ document.addEventListener('DOMContentLoaded', function() {
         // Function to update cooldown timer
         function updateCooldownTimer(timeLeft) {
             if (!timeLeft || timeLeft.totalMs <= 0) {
-                if (formMessage) {
-                    formMessage.textContent = '';
-                }
                 submitButton.disabled = false;
-                submitButton.textContent = 'Send Message';
-                isSubmitting = false;
-                validateInputs();
+                nameInput.disabled = false;
+                emailInput.disabled = false;
+                messageInput.disabled = false;
+                document.getElementById('countdown').textContent = '';
                 return;
             }
 
-            // Calculate time components
-            let totalSeconds = Math.ceil(timeLeft.totalMs / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
+            const hours = Math.floor(timeLeft.totalMs / (60 * 60 * 1000));
+            const minutes = Math.floor((timeLeft.totalMs % (60 * 60 * 1000)) / (60 * 1000));
+            const seconds = Math.floor((timeLeft.totalMs % (60 * 1000)) / 1000);
 
-            // Format the time components to handle singular/plural
-            const hourText = hours === 1 ? 'hour' : 'hours';
-            const minuteText = minutes === 1 ? 'minute' : 'minutes';
-            const secondText = seconds === 1 ? 'second' : 'seconds';
+            document.getElementById('countdown').textContent = 
+                `Please wait ${hours}h ${minutes}m ${seconds}s before sending another message`;
+            document.getElementById('countdown').style.color = '#ff4444';
 
-            // Create a readable time string
-            let timeString = '';
-            if (hours > 0) timeString += `${hours} ${hourText}`;
-            if (minutes > 0) timeString += timeString ? `, ${minutes} ${minuteText}` : `${minutes} ${minuteText}`;
-            if (seconds > 0 || (!hours && !minutes)) timeString += timeString ? `, and ${seconds} ${secondText}` : `${seconds} ${secondText}`;
-
-            // Update the display with a more friendly message
             submitButton.disabled = true;
-            formMessage.textContent = `Please wait ${timeString} before sending another message.`;
-            formMessage.style.color = '#64ffda';
-            isSubmitting = true;
-            validateInputs();
+            nameInput.disabled = true;
+            emailInput.disabled = true;
+            messageInput.disabled = true;
 
-            // Update the timer every second
-            setTimeout(() => {
-                updateCooldownTimer({
-                    totalMs: timeLeft.totalMs - 1000
-                });
-            }, 1000);
+            if (timeLeft.totalMs > 1000) {
+                setTimeout(() => {
+                    updateCooldownTimer({
+                        totalMs: timeLeft.totalMs - 1000
+                    });
+                }, 1000);
+            }
         }
 
         // Function to check cooldown status
@@ -218,31 +206,53 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ name, email, message })
+                    body: JSON.stringify({ name, email, message }),
+                    credentials: 'include'
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    formMessage.innerHTML = 'Message Sent Successfully ✅ <i class="fas fa-check-circle"></i>';
-                    formMessage.style.color = 'green';
-                    submitButton.textContent = 'Message Sent Successfully ✅';
+                    formMessage.innerHTML = 'Message Sent Successfully ';
+                    formMessage.style.color = '#64ffda';
+                    submitButton.textContent = 'Send Message';
+                    submitButton.disabled = true;
                     contactForm.reset();
+                    
+                    // Update cooldown timer immediately
                     if (data.timeLeft) {
                         updateCooldownTimer(data.timeLeft);
+                    } else {
+                        // Default 12-hour cooldown if timeLeft is not provided
+                        updateCooldownTimer({
+                            hours: 12,
+                            minutes: 0,
+                            seconds: 0,
+                            totalMs: 12 * 60 * 60 * 1000
+                        });
                     }
+                    
+                    // Disable form inputs during cooldown
+                    nameInput.disabled = true;
+                    emailInput.disabled = true;
+                    messageInput.disabled = true;
                 } else {
-                    throw new Error(data.error || 'Failed to send message');
+                    if (data.timeLeft) {
+                        updateCooldownTimer(data.timeLeft);
+                        formMessage.textContent = `Please wait ${Math.floor(data.timeLeft.totalMs / (60 * 60 * 1000))} hours before sending another message`;
+                    } else {
+                        throw new Error(data.error || 'Failed to send message');
+                    }
                 }
             } catch (error) {
                 console.error('Error:', error);
                 formMessage.textContent = error.message || 'Failed to send message. Please try again later.';
                 formMessage.style.color = 'red';
-                isSubmitting = false;
-                submitButton.disabled = false;
                 submitButton.textContent = 'Send Message';
+            } finally {
+                isSubmitting = false;
+                validateInputs();
             }
-            validateInputs();
         });
     }
 });
