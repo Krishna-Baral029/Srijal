@@ -157,8 +157,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 const data = await response.json();
+                
                 if (!data.canSendMessage && data.timeLeft) {
                     updateCooldownTimer(data.timeLeft);
+                    nameInput.disabled = true;
+                    emailInput.disabled = true;
+                    messageInput.disabled = true;
+                    submitButton.disabled = true;
+                } else {
+                    nameInput.disabled = false;
+                    emailInput.disabled = false;
+                    validateInputs();
                 }
             } catch (error) {
                 console.error('Error checking cooldown status:', error);
@@ -167,7 +176,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Check cooldown status immediately and every minute
         checkCooldownStatus();
-        setInterval(checkCooldownStatus, 60000);
+        const statusInterval = setInterval(checkCooldownStatus, 60000);
+
+        // Clear interval when page is unloaded
+        window.addEventListener('unload', () => {
+            clearInterval(statusInterval);
+        });
 
         contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();

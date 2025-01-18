@@ -250,41 +250,50 @@ function checkAccessToken(req, res, next) {
 app.use(checkAccessToken);
 
 // Rate limiting with SQLite
-const { generateDeviceFingerprint, checkRateLimit, recordAttempt } = require('./database');
+const { generateDeviceFingerprint, checkRateLimitStatus, getRemainingCooldown, recordAttempt } = require('./database');
 
 // Rate limit middleware
-async function rateLimitMiddleware(req, res, next) {
+const checkRateLimit = async (req, res, next) => {
     try {
         const deviceId = generateDeviceFingerprint(req);
-        const { canSend, timeLeft, attempts } = await checkRateLimit(deviceId);
+        const canSend = await checkRateLimitStatus(deviceId);
+        const timeLeft = await getRemainingCooldown(deviceId);
 
         if (!canSend) {
-            const hours = Math.floor(timeLeft / (60 * 60 * 1000));
-            const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-            
-            let message = `Please wait ${hours}h ${minutes}m before sending another message`;
-            if (attempts > 3) {
-                message = `Too many attempts detected. Cooldown extended. ${message}`;
-            }
-
-            await recordAttempt(req, false);
             return res.status(429).json({
                 success: false,
-                error: message,
-                timeLeft,
-                attempts: attempts + 1
+                error: 'Rate limit exceeded',
+                timeLeft: timeLeft,
+                canSendMessage: false
             });
         }
-
+        req.deviceId = deviceId;
         next();
     } catch (error) {
-        console.error('Rate limit error:', error);
-        next(error);
+        console.error('Rate limit check error:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
-}
+};
 
-// Apply rate limit middleware to contact endpoint
-app.post('/api/contact', rateLimitMiddleware, async (req, res) => {
+// Check status endpoint
+app.post('/api/check-status', async (req, res) => {
+    try {
+        const deviceId = generateDeviceFingerprint(req);
+        const canSend = await checkRateLimitStatus(deviceId);
+        const timeLeft = await getRemainingCooldown(deviceId);
+
+        res.json({
+            canSendMessage: canSend,
+            timeLeft: timeLeft
+        });
+    } catch (error) {
+        console.error('Status check error:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Contact form endpoint
+app.post('/api/contact', checkRateLimit, async (req, res) => {
     try {
         const { name, email, message } = req.body;
 

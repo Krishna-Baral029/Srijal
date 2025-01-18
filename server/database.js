@@ -1,50 +1,37 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const crypto = require('crypto');
 
-// Create a new database in the server directory
 const dbPath = path.join(__dirname, 'ratelimit.db');
 const db = new sqlite3.Database(dbPath);
 
-// Initialize the database with our rate limit table
+// Initialize database
 db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS rate_limits (
-        device_id TEXT PRIMARY KEY,
-        timestamp INTEGER NOT NULL,
-        attempts INTEGER DEFAULT 0,
-        last_ip TEXT,
-        user_agent TEXT
-    )`);
+    db.run(`
+        CREATE TABLE IF NOT EXISTS rate_limits (
+            device_id TEXT PRIMARY KEY,
+            last_attempt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            attempts INTEGER DEFAULT 1,
+            ip_address TEXT,
+            user_agent TEXT
+        )
+    `);
 });
 
-// Generate a device fingerprint
+// Generate a unique device fingerprint
 function generateDeviceFingerprint(req) {
     const components = [
+        req.headers['user-agent'],
         req.ip,
-        req.headers['user-agent'] || '',
-        req.headers['accept-language'] || '',
-        req.headers['sec-ch-ua'] || '',
-        req.headers['sec-ch-ua-platform'] || '',
-        req.headers['sec-ch-ua-mobile'] || '',
-        req.headers['x-forwarded-for'] || '',
-        req.headers['x-real-ip'] || ''
+        req.headers['accept-language']
     ];
-    
-    return crypto
-        .createHash('sha256')
-        .update(components.join('|'))
-        .digest('hex');
+    return Buffer.from(components.join('|')).toString('base64');
 }
 
-// Check if a device can send a message
-function checkRateLimit(deviceId) {
+// Check if user can send message
+async function checkRateLimitStatus(deviceId) {
     return new Promise((resolve, reject) => {
-        const now = Date.now();
-        const cooldownHours = 12;
-        const cooldownMs = cooldownHours * 60 * 60 * 1000;
-
         db.get(
-            'SELECT * FROM rate_limits WHERE device_id = ?',
+            `SELECT last_attempt, attempts FROM rate_limits WHERE device_id = ?`,
             [deviceId],
             (err, row) => {
                 if (err) {
@@ -53,49 +40,73 @@ function checkRateLimit(deviceId) {
                 }
 
                 if (!row) {
-                    resolve({ 
-                        canSend: true,
-                        timeLeft: 0,
-                        attempts: 0
-                    });
+                    resolve(true);
                     return;
                 }
 
-                let timeLeft = (row.timestamp + cooldownMs) - now;
-                
-                // Add penalty time for multiple attempts
-                if (row.attempts > 3) {
-                    timeLeft += (row.attempts - 3) * 2 * 60 * 60 * 1000; // 2 hours per extra attempt
-                }
+                const lastAttempt = new Date(row.last_attempt);
+                const now = new Date();
+                const hoursDiff = (now - lastAttempt) / (1000 * 60 * 60);
 
-                resolve({
-                    canSend: timeLeft <= 0,
-                    timeLeft: Math.max(0, timeLeft),
-                    attempts: row.attempts
-                });
+                // If more than 12 hours have passed, allow new message
+                if (hoursDiff >= 12) {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
             }
         );
     });
 }
 
-// Record a message attempt
-function recordAttempt(req, success = true) {
-    const deviceId = generateDeviceFingerprint(req);
-    const now = Date.now();
+// Get remaining cooldown time
+async function getRemainingCooldown(deviceId) {
+    return new Promise((resolve, reject) => {
+        db.get(
+            `SELECT last_attempt, attempts FROM rate_limits WHERE device_id = ?`,
+            [deviceId],
+            (err, row) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
 
+                if (!row) {
+                    resolve(null);
+                    return;
+                }
+
+                const lastAttempt = new Date(row.last_attempt);
+                const now = new Date();
+                const elapsedMs = now - lastAttempt;
+                const cooldownMs = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+                const remainingMs = Math.max(0, cooldownMs - elapsedMs);
+
+                if (remainingMs <= 0) {
+                    // Clean up old entry if cooldown has expired
+                    db.run(`DELETE FROM rate_limits WHERE device_id = ?`, [deviceId]);
+                    resolve(null);
+                } else {
+                    resolve({
+                        totalMs: remainingMs,
+                        hours: Math.floor(remainingMs / (1000 * 60 * 60)),
+                        minutes: Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60)),
+                        seconds: Math.floor((remainingMs % (1000 * 60)) / 1000)
+                    });
+                }
+            }
+        );
+    });
+}
+
+// Record an attempt
+async function recordAttempt(req, success = true) {
+    const deviceId = generateDeviceFingerprint(req);
     return new Promise((resolve, reject) => {
         db.run(
-            `INSERT INTO rate_limits (device_id, timestamp, attempts, last_ip, user_agent)
-             VALUES (?, ?, ?, ?, ?)
-             ON CONFLICT(device_id) DO UPDATE SET
-             timestamp = CASE WHEN ? THEN ? ELSE timestamp END,
-             attempts = attempts + 1,
-             last_ip = ?,
-             user_agent = ?`,
-            [
-                deviceId, now, 1, req.ip, req.headers['user-agent'] || '',
-                success, now, req.ip, req.headers['user-agent'] || ''
-            ],
+            `INSERT OR REPLACE INTO rate_limits (device_id, last_attempt, attempts, ip_address, user_agent)
+             VALUES (?, CURRENT_TIMESTAMP, COALESCE((SELECT attempts + 1 FROM rate_limits WHERE device_id = ?), 1), ?, ?)`,
+            [deviceId, deviceId, req.ip, req.headers['user-agent']],
             (err) => {
                 if (err) reject(err);
                 else resolve();
@@ -104,26 +115,28 @@ function recordAttempt(req, success = true) {
     });
 }
 
-// Clean up expired rate limits
-function cleanupRateLimits() {
-    const now = Date.now();
-    const cooldownMs = 12 * 60 * 60 * 1000;
-
+// Clean up expired entries
+function cleanupExpiredEntries() {
+    const twelveHoursAgo = new Date(Date.now() - (12 * 60 * 60 * 1000));
     db.run(
-        'DELETE FROM rate_limits WHERE timestamp < ? AND attempts < 4',
-        [now - cooldownMs],
-        (err) => {
-            if (err) console.error('Error cleaning up rate limits:', err);
-        }
+        `DELETE FROM rate_limits WHERE last_attempt < ?`,
+        [twelveHoursAgo.toISOString()]
     );
 }
 
 // Run cleanup every hour
-setInterval(cleanupRateLimits, 60 * 60 * 1000);
+setInterval(cleanupExpiredEntries, 60 * 60 * 1000);
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    db.close(() => {
+        process.exit(0);
+    });
+});
 
 module.exports = {
     generateDeviceFingerprint,
-    checkRateLimit,
-    recordAttempt,
-    cleanupRateLimits
+    checkRateLimitStatus,
+    getRemainingCooldown,
+    recordAttempt
 };
