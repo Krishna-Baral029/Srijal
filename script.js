@@ -226,6 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     formMessage.textContent = 'Message sent successfully!';
                     formMessage.style.color = 'green';
+                    submitButton.textContent = 'Message Sent';
                     contactForm.reset();
                     if (data.timeLeft) {
                         updateCooldownTimer(data.timeLeft);
