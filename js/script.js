@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.querySelector('.typed-text')) {
         const typed = new Typed('.typed-text', {
             strings: [
-                'Web Developer 💻',
+                'Web Developer 💻 🌐',
                 'UI Designer 🎨',
                 'Full-Stack Developer 🚀',
                 'Hotel Management Student 🏨'
