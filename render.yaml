@@ -1,26 +1,19 @@
 services:
   - type: web
-    name: portfolio
-    env: node
-    buildCommand: npm ci
-    startCommand: node server/server.js
+    name: srijal-portfolio
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server.app:app
     envVars:
-      - key: NODE_ENV
-        value: production
+      - key: PYTHON_VERSION
+        value: 3.13.0
       - key: PORT
-        value: 3000
-      - key: EMAIL_USER
-        sync: false
-      - key: EMAIL_PASS
-        sync: false
-      - key: ACCESS_TOKEN_SECRET
-        generateValue: true
+        value: 10000
     autoDeploy: true
     buildFilter:
       paths:
         - server/**
-        - package.json
-        - package-lock.json
+        - requirements.txt
     headers:
       - path: /*
         name: Cache-Control
