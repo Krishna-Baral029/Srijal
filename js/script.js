@@ -19,7 +19,8 @@ document.addEventListener('DOMContentLoaded', function() {
             backSpeed: 30,
             loop: true,
             backDelay: 1500,
-            cursorChar: '|'
+            cursorChar: '|',
+            showCursor: false  // Disable cursor visibility
         });
     }
 
