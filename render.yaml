@@ -5,11 +5,12 @@ services:
     region: oregon
     buildCommand: |
       python -m pip install --upgrade pip
+      pip install wheel
       pip install -r requirements.txt
-    startCommand: gunicorn server.app:app
+    startCommand: gunicorn --workers 4 --bind 0.0.0.0:$PORT server.app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0
+        value: 3.8.12
       - key: PORT
         value: 10000
       - key: FLASK_ENV
@@ -26,6 +27,8 @@ services:
         sync: false
       - key: CORS_ALLOWED_ORIGINS
         value: https://srijal-portfolio.onrender.com,https://sandeshbro-ux.github.io
+      - key: PYTHONUNBUFFERED
+        value: "true"
     autoDeploy: true
     buildFilter:
       paths:

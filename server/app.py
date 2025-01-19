@@ -19,23 +19,22 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Mail configuration for Gmail SMTP
-app.config.update(
-    MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=587,
-    MAIL_USE_TLS=True,
-    MAIL_USE_SSL=False,  # Gmail uses TLS
-    MAIL_USERNAME=os.getenv('EMAIL_USER'),
-    MAIL_PASSWORD=os.getenv('EMAIL_PASS'),
-    MAIL_DEFAULT_SENDER=os.getenv('EMAIL_USER'),
-    MAIL_MAX_EMAILS=None,  # No limit
-    MAIL_ASCII_ATTACHMENTS=False,
-    MAIL_SUPPRESS_SEND=False,  # Enable email sending
-    MAIL_DEBUG=True  # Enable debug messages
-)
+CORS(app, resources={r"/api/*": {"origins": os.getenv('CORS_ALLOWED_ORIGINS', '*').split(',')}})
+
+# Configure Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')
+app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('EMAIL_USER')
+app.config['MAIL_MAX_EMAILS'] = 5
+app.config['MAIL_ASCII_ATTACHMENTS'] = True
+
+# Initialize extensions
+mail = Mail(app)
 
 try:
-    mail = Mail(app)
     logger.info("Mail configuration initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize mail configuration: {e}")
@@ -50,21 +49,6 @@ def add_security_headers(response):
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     response.headers['Content-Security-Policy'] = "default-src 'self'"
     return response
-
-# Configure CORS with strict options
-CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "http://localhost:5500",
-            "https://srijal-portfolio.onrender.com",
-            "https://sandeshbro-ux.github.io"
-        ],
-        "methods": ["POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"],
-        "max_age": 3600,
-        "supports_credentials": True
-    }
-})
 
 # Rate limiting decorator
 def rate_limit(limit=5, window=60):
