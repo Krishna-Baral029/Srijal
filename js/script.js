@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
             countdownElement.style.display = 'block';
             countdownElement.innerHTML = `
                 <div class="timer-container">
-                    <div class="timer-label">Time remaining until next message:</div>
+                    <div class="timer-label">You can send another message after:</div>
                     <div class="timer-digits">
                         <span class="time-unit">${String(time.hours).padStart(2, '0')}</span>
                         <span class="time-separator">:</span>
