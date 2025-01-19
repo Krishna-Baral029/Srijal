@@ -580,6 +580,15 @@ h2::after {
     z-index: 2;
 }
 
+/* Globe Emoji Style */
+.globe-emoji {
+    display: inline-block;
+    /* Convert to your teal accent color #64ffda using filters */
+    filter: brightness(1.2) hue-rotate(155deg) saturate(1.5);
+    /* Add a subtle glow effect */
+    text-shadow: 0 0 8px rgba(100, 255, 218, 0.6);
+}
+
 /* Footer */
 footer {
     text-align: center;

@@ -1,27 +1,35 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Redirect to home page on refresh
+    // Start typed.js immediately
+    const typedElement = document.querySelector('.typed-text');
+    if (typedElement) {
+        const typed = new Typed('.typed-text', {
+            strings: [
+                'Web Developer  ',  
+                'UI Designer  ',    
+                'Full-Stack Developer  ',  
+                'Hotel Management Student  '   
+            ],
+            typeSpeed: 50,      // Back to original speed
+            backSpeed: 30,      // Back to original speed
+            loop: true,
+            backDelay: 1500,    // Back to original delay
+            cursorChar: '|',
+            showCursor: false,
+            startDelay: 0,      // Start immediately
+            onStringTyped: function(arrayPos) {
+                // Add emoji after typing is complete for each string
+                const emojis = ['🌐', '🎨', '⚡', '🏨'];
+                const currentString = typed.el.innerHTML;
+                typed.el.innerHTML = currentString.trimEnd() + emojis[arrayPos];
+            }
+        });
+    }
+
+    // Move the page refresh code after typed.js initialization
     if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD) {
         if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
             window.location.href = '/';
         }
-    }
-
-    // Typed.js initialization (only on home page)
-    if (document.querySelector('.typed-text')) {
-        const typed = new Typed('.typed-text', {
-            strings: [
-                'Web Developer 🌐',  // Globe emoji
-                'UI Designer 🎨',  // Artist Palette
-                'Full-Stack Developer ⚡',  // High Voltage
-                'Hotel Management Student 🏨'  // Hotel
-            ],
-            typeSpeed: 50,
-            backSpeed: 30,
-            loop: true,
-            backDelay: 1500,
-            cursorChar: '|',
-            showCursor: false  // Disable cursor visibility
-        });
     }
 
     // Project cards hover effect
