@@ -111,41 +111,61 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    // Function to update timer display
-    function updateTimerDisplay(remainingTime) {
-        const countdownElement = document.getElementById('countdown');
-        if (!countdownElement) return;
-
-        if (remainingTime <= 0) {
-            countdownElement.style.display = 'none';
-            return;
-        }
-
-        // Convert milliseconds to hours, minutes, seconds
-        const hours = Math.floor(remainingTime / (1000 * 60 * 60));
-        const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
-
-        countdownElement.style.display = 'block';
-        countdownElement.innerHTML = `
-            <div class="cooldown-message">Please wait before sending another message</div>
-            <div class="timer">
-                Time remaining: ${hours}h ${minutes}m ${seconds}s
-            </div>
-        `;
-
-        // Update the timer every second
-        if (remainingTime > 1000) {
-            setTimeout(() => updateTimerDisplay(remainingTime - 1000), 1000);
-        }
-    }
-
     // Contact form submission
     const contactForm = document.querySelector('#contactForm');
     if (contactForm) {
         const submitButton = contactForm.querySelector('button[type="submit"]');
-        const formMessage = document.querySelector('.form-message');
-        
+        const formMessage = document.querySelector('#formMessage');
+        let timerInterval;
+
+        // Function to update timer display
+        function updateTimerDisplay(remainingTime) {
+            const countdownElement = document.getElementById('countdown');
+            if (!countdownElement) return;
+
+            if (remainingTime <= 0) {
+                countdownElement.style.display = 'none';
+                submitButton.disabled = false;
+                formMessage.textContent = '';
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                return;
+            }
+
+            const { hours, minutes, seconds } = formatTimeRemaining(remainingTime);
+            countdownElement.style.display = 'block';
+            countdownElement.innerHTML = `
+                <div class="countdown-item">
+                    <span class="countdown-value">${hours}</span>
+                    <span class="countdown-label">Hours</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="countdown-value">${minutes}</span>
+                    <span class="countdown-label">Minutes</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="countdown-value">${seconds}</span>
+                    <span class="countdown-label">Seconds</span>
+                </div>
+            `;
+
+            // Update every second
+            if (!timerInterval) {
+                timerInterval = setInterval(() => {
+                    remainingTime -= 1000;
+                    if (remainingTime <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        checkCooldown(); // Verify with server when timer ends
+                    } else {
+                        updateTimerDisplay(remainingTime);
+                    }
+                }, 1000);
+            }
+        }
+
         // Function to check cooldown status
         async function checkCooldown() {
             try {
@@ -171,9 +191,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (countdownElement) {
                         countdownElement.style.display = 'none';
                     }
+                    if (timerInterval) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                    }
                 }
             } catch (error) {
                 console.error('Error checking cooldown:', error);
+                // On error, check again after 5 seconds
+                setTimeout(checkCooldown, 5000);
             }
         }
 
@@ -211,8 +237,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     formMessage.style.color = '#64ffda';
                     contactForm.reset();
                     
-                    // Check cooldown status after successful send
-                    setTimeout(checkCooldown, 1000);
+                    // Check cooldown status immediately after successful send
+                    checkCooldown();
                 } else {
                     formMessage.textContent = data.error;
                     formMessage.style.color = '#ff4444';
@@ -232,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check cooldown on page load
         checkCooldown();
         
-        // Periodically check cooldown status
-        setInterval(checkCooldown, 30000); // Every 30 seconds
+        // Periodically check cooldown status with server (every 30 seconds)
+        setInterval(checkCooldown, 30000);
     }
 });
