@@ -118,14 +118,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
             
             return {
-                hours,
-                minutes,
-                seconds,
-                formatted: `${hours}h ${minutes}m ${seconds}s`
+                hours: Math.max(0, hours),
+                minutes: Math.max(0, minutes),
+                seconds: Math.max(0, seconds)
             };
         }
 
-        // Function to update cooldown timer display
+        let countdownInterval = null;
+        let lastServerSync = 0;
+        let currentRemainingMs = 0;
+
+        // Function to update timer display
         function updateTimerDisplay(remainingMs) {
             const countdownElement = document.getElementById('countdown');
             if (!countdownElement) return;
@@ -142,11 +145,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="timer-container">
                     <div class="timer-label">Time remaining until next message:</div>
                     <div class="timer-digits">
-                        <span class="time-unit">${time.hours.toString().padStart(2, '0')}</span>
+                        <span class="time-unit">${String(time.hours).padStart(2, '0')}</span>
                         <span class="time-separator">:</span>
-                        <span class="time-unit">${time.minutes.toString().padStart(2, '0')}</span>
+                        <span class="time-unit">${String(time.minutes).padStart(2, '0')}</span>
                         <span class="time-separator">:</span>
-                        <span class="time-unit">${time.seconds.toString().padStart(2, '0')}</span>
+                        <span class="time-unit">${String(time.seconds).padStart(2, '0')}</span>
                     </div>
                     <div class="timer-labels">
                         <span>Hours</span>
@@ -159,19 +162,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Function to start countdown timer
         function startCountdownTimer(remainingMs) {
-            if (!remainingMs || remainingMs <= 0) return;
+            // Clear any existing interval
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            if (!remainingMs || remainingMs <= 0) {
+                updateTimerDisplay(0);
+                location.reload();
+                return;
+            }
+
+            currentRemainingMs = remainingMs;
+            lastServerSync = Date.now();
             
-            updateTimerDisplay(remainingMs);
+            updateTimerDisplay(currentRemainingMs);
             
-            const timerInterval = setInterval(() => {
-                remainingMs -= 1000;
+            countdownInterval = setInterval(() => {
+                // Decrease by exactly 1 second
+                currentRemainingMs = Math.max(0, currentRemainingMs - 1000);
                 
-                if (remainingMs <= 0) {
-                    clearInterval(timerInterval);
+                if (currentRemainingMs <= 0) {
+                    clearInterval(countdownInterval);
                     updateTimerDisplay(0);
-                    location.reload(); // Refresh page when timer completes
+                    location.reload();
                 } else {
-                    updateTimerDisplay(remainingMs);
+                    updateTimerDisplay(currentRemainingMs);
                 }
             }, 1000);
         }
@@ -195,7 +211,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (!data.allowed && data.remainingMs > 0) {
-                    startCountdownTimer(data.remainingMs);
+                    // Only update timer if it's significantly different from our current time
+                    const timeDiff = Math.abs(currentRemainingMs - data.remainingMs);
+                    if (timeDiff > 5000) { // If difference is more than 5 seconds
+                        startCountdownTimer(data.remainingMs);
+                    }
+                    
                     submitButton.disabled = true;
                     nameInput.disabled = true;
                     emailInput.disabled = true;
@@ -203,6 +224,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     formMessage.textContent = data.message;
                     formMessage.style.color = '#ff4444';
                 } else {
+                    if (countdownInterval) {
+                        clearInterval(countdownInterval);
+                        countdownInterval = null;
+                    }
                     submitButton.disabled = false;
                     nameInput.disabled = false;
                     emailInput.disabled = false;
@@ -215,9 +240,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Check cooldown status immediately and periodically
+        // Check cooldown status immediately and periodically (every 30 seconds)
         checkCooldownStatus();
-        setInterval(checkCooldownStatus, 3000);
+        setInterval(checkCooldownStatus, 30000);
 
         contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
