@@ -580,6 +580,28 @@ h2::after {
     z-index: 2;
 }
 
+/* Role Emoji Styles */
+.role-emoji {
+    display: inline-block;
+    filter: hue-rotate(140deg) brightness(1.2) saturate(1.5);
+    animation: emojiGlow 2s ease-in-out infinite;
+}
+
+@keyframes emojiGlow {
+    0% {
+        filter: hue-rotate(140deg) brightness(1.2) saturate(1.5);
+        text-shadow: 0 0 5px rgba(100, 255, 218, 0.5);
+    }
+    50% {
+        filter: hue-rotate(160deg) brightness(1.4) saturate(1.7);
+        text-shadow: 0 0 15px rgba(100, 255, 218, 0.7);
+    }
+    100% {
+        filter: hue-rotate(140deg) brightness(1.2) saturate(1.5);
+        text-shadow: 0 0 5px rgba(100, 255, 218, 0.5);
+    }
+}
+
 /* Footer */
 footer {
     text-align: center;

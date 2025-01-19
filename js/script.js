@@ -10,10 +10,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.querySelector('.typed-text')) {
         const typed = new Typed('.typed-text', {
             strings: [
-                'Web Developer 💻 🌐',
-                'UI Designer 🎨',
-                'Full-Stack Developer 🚀',
-                'Hotel Management Student 🏨'
+                'Web Developer <span class="role-emoji">💻</span> <span class="role-emoji">🌐</span>',
+                'UI Designer <span class="role-emoji">🎨</span>',
+                'Full-Stack Developer <span class="role-emoji">🚀</span>',
+                'Hotel Management Student <span class="role-emoji">🏨</span>'
             ],
             typeSpeed: 50,
             backSpeed: 30,
