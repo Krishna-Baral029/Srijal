@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Get the base API URL from config
     async function getApiBaseUrl() {
-        const { default: config } = await import('./js/config.js');
+        const { default: config } = await import('./config.js');
         return config.SERVER_URL;
     }
 
