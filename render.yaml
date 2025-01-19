@@ -1,13 +1,10 @@
 services:
   - type: web
     name: srijal-portfolio
-    env: python
+    runtime: python
     region: oregon
-    buildCommand: |
-      python -m pip install --upgrade pip
-      pip install wheel
-      pip install -r requirements.txt
-    startCommand: gunicorn --workers 4 --bind 0.0.0.0:$PORT server.app:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT server.app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.8.12
