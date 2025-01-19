@@ -10,10 +10,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.querySelector('.typed-text')) {
         const typed = new Typed('.typed-text', {
             strings: [
-                'Web Developer \u2728',  // Sparkles
-                'UI Designer \u{1F3A8}',  // Artist Palette
-                'Full-Stack Developer \u26A1',  // High Voltage
-                'Hotel Management Student \u{1F3E8}'  // Hotel
+                'Web Developer 🌐',  // Globe emoji
+                'UI Designer 🎨',  // Artist Palette
+                'Full-Stack Developer ⚡',  // High Voltage
+                'Hotel Management Student 🏨'  // Hotel
             ],
             typeSpeed: 50,
             backSpeed: 30,
