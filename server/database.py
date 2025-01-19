@@ -97,6 +97,16 @@ def is_valid_request(request):
         logger.error(f"Error validating request: {e}")
         return False
 
+def is_valid_email(email):
+    """Validate email format"""
+    try:
+        # Basic email validation using regex
+        email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+        return bool(email_pattern.match(email))
+    except Exception as e:
+        logger.error(f"Error validating email: {e}")
+        return False
+
 def can_send_message(request):
     """Check if a user can send a message with proper error handling"""
     conn = None

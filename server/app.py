@@ -7,21 +7,39 @@ import os
 from functools import wraps
 import time
 from dotenv import load_dotenv
+import logging
+import ssl
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
-# Mail configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')
-app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('EMAIL_USER')
+# Mail configuration for Gmail SMTP
+app.config.update(
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USE_SSL=False,  # Gmail uses TLS
+    MAIL_USERNAME=os.getenv('EMAIL_USER'),
+    MAIL_PASSWORD=os.getenv('EMAIL_PASS'),
+    MAIL_DEFAULT_SENDER=os.getenv('EMAIL_USER'),
+    MAIL_MAX_EMAILS=None,  # No limit
+    MAIL_ASCII_ATTACHMENTS=False,
+    MAIL_SUPPRESS_SEND=False,  # Enable email sending
+    MAIL_DEBUG=True  # Enable debug messages
+)
 
-mail = Mail(app)
+try:
+    mail = Mail(app)
+    logger.info("Mail configuration initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize mail configuration: {e}")
+    raise
 
 # Security headers
 @app.after_request
@@ -86,6 +104,19 @@ def rate_limit(limit=5, window=60):
         return wrapped
     return decorator
 
+def send_email_with_retry(msg, max_retries=3):
+    """Send email with retry mechanism"""
+    for attempt in range(max_retries):
+        try:
+            mail.send(msg)
+            logger.info(f"Email sent successfully to {msg.recipients}")
+            return True
+        except Exception as e:
+            logger.error(f"Attempt {attempt + 1} failed: {str(e)}")
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(1)  # Wait before retrying
+
 # Initialize the database
 database.init_db()
 
@@ -125,6 +156,13 @@ def send_message():
             'error': 'Message too long'
         }), 400
     
+    # Validate email format
+    if not database.is_valid_email(data['email']):
+        return jsonify({
+            'success': False,
+            'error': 'Invalid email format'
+        }), 400
+    
     can_send, remaining_time = database.can_send_message(request)
     
     if not can_send:
@@ -135,7 +173,7 @@ def send_message():
         })
     
     try:
-        # Send email
+        # Create email message
         msg = Message(
             subject=f"New Portfolio Message from {data['name']}",
             recipients=[os.getenv('EMAIL_USER')],
@@ -147,20 +185,26 @@ def send_message():
             
             Message:
             {data['message']}
-            """
+            
+            Sent at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            """,
+            reply_to=data['email']  # Enable direct reply to sender
         )
-        mail.send(msg)
+        
+        # Send email with retry
+        send_email_with_retry(msg)
         
         # Update the cooldown timer for this user
         database.update_last_message_time(request)
         
+        logger.info(f"Message sent successfully from {data['email']}")
         return jsonify({
             'success': True,
             'message': 'Message sent successfully'
         })
         
     except Exception as e:
-        app.logger.error(f"Error sending email: {e}")
+        logger.error(f"Error sending email: {e}")
         return jsonify({
             'success': False,
             'error': 'Error sending message. Please try again.'
