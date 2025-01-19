@@ -9,7 +9,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Typed.js initialization (only on home page)
     if (document.querySelector('.typed-text')) {
         const typed = new Typed('.typed-text', {
-            strings: ['Web Developer', 'UI Designer', 'Full Stack Developer', 'Problem Solver'],
+            strings: [
+                'Web Developer 💻',
+                'UI Designer 🎨',
+                'Full-Stack Developer 🚀',
+                'Hotel Management Student 🏨'
+            ],
             typeSpeed: 50,
             backSpeed: 30,
             loop: true,
