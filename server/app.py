@@ -1,46 +1,41 @@
 from flask import Flask, request, jsonify
 from flask_mail import Mail, Message
 from flask_cors import CORS
-import sys
 import os
-from pathlib import Path
-
-# Add the server directory to Python path
-server_dir = Path(__file__).resolve().parent
-if str(server_dir) not in sys.path:
-    sys.path.append(str(server_dir))
-
-from database import validate_email, init_db, can_send_message, update_last_message_time, is_valid_email
-from datetime import datetime
+import logging
+from datetime import datetime, timedelta
 import time
 from dotenv import load_dotenv
-import logging
-import ssl
-from functools import wraps
+from database import validate_email, init_db, can_send_message, update_last_message_time, is_valid_email
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
-
+# Initialize Flask app
 app = Flask(__name__)
 
+# Configure CORS
 CORS(app, resources={r"/api/*": {"origins": os.getenv('CORS_ALLOWED_ORIGINS', '*').split(',')}})
 
 # Configure Flask-Mail
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')
-app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('EMAIL_USER')
-app.config['MAIL_MAX_EMAILS'] = 5
-app.config['MAIL_ASCII_ATTACHMENTS'] = True
+app.config.update(
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USERNAME=os.getenv('EMAIL_USER'),
+    MAIL_PASSWORD=os.getenv('EMAIL_PASS'),
+    MAIL_DEFAULT_SENDER=os.getenv('EMAIL_USER')
+)
 
 # Initialize extensions
 mail = Mail(app)
+
+# Initialize database
+init_db()
 
 try:
     logger.info("Mail configuration initialized successfully")
@@ -108,9 +103,6 @@ def send_email_with_retry(msg, max_retries=3):
             if attempt == max_retries - 1:
                 raise
             time.sleep(1)  # Wait before retrying
-
-# Initialize the database
-init_db()
 
 @app.route('/api/check-cooldown', methods=['POST'])
 @rate_limit(limit=10, window=60)  # 10 requests per minute
