@@ -278,59 +278,77 @@ const checkRateLimit = async (req, res, next) => {
 // Check status endpoint
 app.post('/api/check-status', async (req, res) => {
     try {
-        const deviceId = generateDeviceFingerprint(req);
-        const canSend = await checkRateLimitStatus(deviceId);
-        const timeLeft = await getRemainingCooldown(deviceId);
-
-        res.json({
-            canSendMessage: canSend,
-            timeLeft: timeLeft
-        });
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        const status = await checkRateLimitStatus(ipAddress);
+        res.json(status);
     } catch (error) {
         console.error('Status check error:', error);
-        res.status(500).json({ success: false, error: 'Internal server error' });
+        res.status(500).json({ error: 'Failed to check status' });
     }
 });
 
 // Contact form endpoint
-app.post('/api/contact', checkRateLimit, async (req, res) => {
+app.post('/api/contact', async (req, res) => {
     try {
-        const { name, email, message } = req.body;
-
-        if (!name || !email || !message) {
-            return res.status(400).json({
-                success: false,
-                error: 'Please provide all required fields'
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        
+        // Check rate limit before proceeding
+        const rateLimitStatus = await checkRateLimitStatus(ipAddress);
+        
+        if (!rateLimitStatus.allowed) {
+            return res.status(429).json({
+                error: 'Rate limit exceeded',
+                remainingMs: rateLimitStatus.remainingMs,
+                remainingHours: rateLimitStatus.remainingHours
             });
         }
 
+        const { name, email, message } = req.body;
+
+        if (!name || !email || !message) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        // Validate email format
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // Send email
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: process.env.EMAIL_USER,
-            subject: `Portfolio Contact from ${name}`,
-            text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+            subject: `Portfolio Contact: ${name}`,
+            text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}\nIP: ${ipAddress}`,
             html: `
-                <h3>New Contact Message</h3>
+                <h3>New Contact Form Submission</h3>
                 <p><strong>Name:</strong> ${name}</p>
                 <p><strong>Email:</strong> ${email}</p>
                 <p><strong>Message:</strong> ${message}</p>
+                <p><small>Sent from IP: ${ipAddress}</small></p>
             `
         };
 
         await transporter.sendMail(mailOptions);
         
-        // Record successful attempt
-        await recordAttempt(req, true);
+        // Record the attempt only after successful email send
+        await recordAttempt(ipAddress);
 
-        res.status(200).json({
+        // Get updated cooldown time
+        const updatedStatus = await getRemainingCooldown(ipAddress);
+        
+        res.json({
             success: true,
-            message: 'Message sent successfully'
+            message: 'Message sent successfully',
+            remainingMs: updatedStatus.remainingMs,
+            remainingHours: updatedStatus.remainingHours
         });
+
     } catch (error) {
-        console.error('Error sending email:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to send message'
+        console.error('Contact form error:', error);
+        res.status(500).json({ 
+            error: 'Failed to send message',
+            message: error.message
         });
     }
 });
