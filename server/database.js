@@ -13,7 +13,7 @@ db.serialize(() => {
     db.run(`
         CREATE TABLE IF NOT EXISTS rate_limits (
             ip_address TEXT PRIMARY KEY,
-            last_attempt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_attempt DATETIME DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now')),
             attempts INTEGER DEFAULT 1
         )
     `);
@@ -28,7 +28,8 @@ async function checkRateLimitStatus(ipAddress) {
         const query = `
             SELECT 
                 last_attempt,
-                attempts
+                attempts,
+                strftime('%s', 'now') - strftime('%s', last_attempt) as seconds_elapsed
             FROM rate_limits 
             WHERE ip_address = ?
         `;
@@ -45,26 +46,25 @@ async function checkRateLimitStatus(ipAddress) {
                 return;
             }
 
-            const lastAttempt = new Date(row.last_attempt);
-            const now = new Date();
-            const timeDiffMs = now - lastAttempt;
             const cooldownHours = 12;
-            const cooldownMs = cooldownHours * 60 * 60 * 1000;
-
-            if (timeDiffMs >= cooldownMs) {
+            const cooldownSeconds = cooldownHours * 60 * 60;
+            const secondsElapsed = row.seconds_elapsed;
+            
+            if (secondsElapsed >= cooldownSeconds) {
                 resolve({ allowed: true });
             } else {
-                const remainingMs = Math.max(0, cooldownMs - timeDiffMs);
-                const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
-                const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-                const remainingSeconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+                const remainingSeconds = cooldownSeconds - secondsElapsed;
+                const remainingMs = remainingSeconds * 1000;
+                const remainingHours = Math.floor(remainingSeconds / 3600);
+                const remainingMinutes = Math.floor((remainingSeconds % 3600) / 60);
+                const remainingSecondsDisplay = Math.floor(remainingSeconds % 60);
                 
                 resolve({
                     allowed: false,
                     remainingMs,
                     remainingHours,
                     remainingMinutes,
-                    remainingSeconds
+                    remainingSeconds: remainingSecondsDisplay
                 });
             }
         });
@@ -79,7 +79,7 @@ async function recordAttempt(ipAddress) {
                 ip_address,
                 last_attempt,
                 attempts
-            ) VALUES (?, datetime('now'), COALESCE(
+            ) VALUES (?, strftime('%Y-%m-%d %H:%M:%f', 'now'), COALESCE(
                 (SELECT attempts + 1 FROM rate_limits WHERE ip_address = ?),
                 1
             ))
@@ -101,12 +101,14 @@ async function cleanupExpiredEntries() {
     return new Promise((resolve, reject) => {
         const query = `
             DELETE FROM rate_limits 
-            WHERE datetime(last_attempt) <= datetime('now', '-12 hours')
+            WHERE strftime('%s', 'now') - strftime('%s', last_attempt) >= ?
         `;
         
-        db.run(query, [], (err) => {
+        const cooldownSeconds = 12 * 60 * 60; // 12 hours in seconds
+        
+        db.run(query, [cooldownSeconds], (err) => {
             if (err) {
-                console.error('Cleanup error:', err);
+                console.error('Database error:', err);
                 reject(err);
             } else {
                 resolve();
@@ -114,9 +116,6 @@ async function cleanupExpiredEntries() {
         });
     });
 }
-
-// Run cleanup every hour
-setInterval(cleanupExpiredEntries, 60 * 60 * 1000);
 
 // Get remaining cooldown time for an IP
 async function getRemainingCooldown(ipAddress) {
@@ -160,6 +159,9 @@ async function getRemainingCooldown(ipAddress) {
         });
     });
 }
+
+// Run cleanup every hour
+setInterval(cleanupExpiredEntries, 60 * 60 * 1000);
 
 // Graceful shutdown
 process.on('SIGINT', () => {
