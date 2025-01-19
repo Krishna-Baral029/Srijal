@@ -3,36 +3,113 @@ from flask_cors import CORS
 import database
 from datetime import datetime
 import os
+from functools import wraps
+import time
 
 app = Flask(__name__)
 
-# Configure CORS for your Render domain
+# Security headers
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    return response
+
+# Configure CORS with strict options
 CORS(app, resources={
     r"/api/*": {
         "origins": [
-            "http://localhost:5500",  # Local development
-            "https://srijal-portfolio.onrender.com",  # Render domain
-            "https://sandeshbro-ux.github.io"  # GitHub Pages domain
+            "http://localhost:5500",
+            "https://srijal-portfolio.onrender.com",
+            "https://sandeshbro-ux.github.io"
         ],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "methods": ["POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "max_age": 3600,
+        "supports_credentials": True
     }
 })
+
+# Rate limiting decorator
+def rate_limit(limit=5, window=60):
+    def decorator(f):
+        # Store last request times per IP
+        requests = {}
+        
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            # Get real IP, considering proxies
+            ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+            if ip:
+                ip = ip.split(',')[0].strip()
+            
+            # Get current time
+            now = time.time()
+            
+            # Initialize request list for this IP
+            if ip not in requests:
+                requests[ip] = []
+            
+            # Remove old requests
+            requests[ip] = [req_time for req_time in requests[ip] if now - req_time < window]
+            
+            # Check if rate limit is exceeded
+            if len(requests[ip]) >= limit:
+                return jsonify({
+                    'success': False,
+                    'error': 'Too many requests. Please try again later.',
+                    'remainingTime': window - (now - requests[ip][0])
+                }), 429
+            
+            # Add current request
+            requests[ip].append(now)
+            
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
 
 # Initialize the database
 database.init_db()
 
 @app.route('/api/check-cooldown', methods=['POST'])
+@rate_limit(limit=10, window=60)  # 10 requests per minute
 def check_cooldown():
     can_send, remaining_time = database.can_send_message(request)
     
     return jsonify({
         'canSend': can_send,
-        'remainingTime': remaining_time * 1000  # Convert to milliseconds for JavaScript
+        'remainingTime': remaining_time * 1000
     })
 
 @app.route('/api/send-message', methods=['POST'])
+@rate_limit(limit=5, window=60)  # 5 requests per minute
 def send_message():
+    # Validate request body
+    if not request.is_json:
+        return jsonify({
+            'success': False,
+            'error': 'Invalid request format'
+        }), 400
+    
+    data = request.get_json()
+    required_fields = ['name', 'email', 'message']
+    
+    if not all(field in data for field in required_fields):
+        return jsonify({
+            'success': False,
+            'error': 'Missing required fields'
+        }), 400
+    
+    # Check message length
+    if len(data['message']) > 1000:  # Limit message length
+        return jsonify({
+            'success': False,
+            'error': 'Message too long'
+        }), 400
+    
     can_send, remaining_time = database.can_send_message(request)
     
     if not can_send:
@@ -45,14 +122,11 @@ def send_message():
     # Update the cooldown timer for this user
     database.update_last_message_time(request)
     
-    # Here you would handle the actual message sending
-    # For now, we'll just return success
     return jsonify({
         'success': True,
         'message': 'Message sent successfully'
     })
 
 if __name__ == '__main__':
-    # Get port from environment variable (Render sets this)
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
