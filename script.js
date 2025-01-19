@@ -111,42 +111,69 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initial validation
         validateInputs();
 
-        // Function to update cooldown timer
-        function updateCooldownTimer(timeLeft) {
-            const countdownElement = document.getElementById('countdown');
+        // Function to format time remaining
+        function formatTimeRemaining(milliseconds) {
+            const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+            const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
             
-            if (!timeLeft || timeLeft.remainingMs <= 0) {
-                submitButton.disabled = false;
-                nameInput.disabled = false;
-                emailInput.disabled = false;
-                messageInput.disabled = false;
-                countdownElement.textContent = '';
+            return {
+                hours,
+                minutes,
+                seconds,
+                formatted: `${hours}h ${minutes}m ${seconds}s`
+            };
+        }
+
+        // Function to update cooldown timer display
+        function updateTimerDisplay(remainingMs) {
+            const countdownElement = document.getElementById('countdown');
+            if (!countdownElement) return;
+
+            if (!remainingMs || remainingMs <= 0) {
                 countdownElement.style.display = 'none';
                 return;
             }
 
-            const hours = Math.floor(timeLeft.remainingMs / (60 * 60 * 1000));
-            const minutes = Math.floor((timeLeft.remainingMs % (60 * 60 * 1000)) / (60 * 1000));
-            const seconds = Math.floor((timeLeft.remainingMs % (60 * 1000)) / 1000);
-
+            const time = formatTimeRemaining(remainingMs);
+            
             countdownElement.style.display = 'block';
-            countdownElement.textContent = `Please wait ${hours}h ${minutes}m ${seconds}s before sending another message`;
-            countdownElement.style.color = '#ff4444';
-            countdownElement.style.marginTop = '10px';
-            countdownElement.style.fontWeight = 'bold';
+            countdownElement.innerHTML = `
+                <div class="timer-container">
+                    <div class="timer-label">Time remaining until next message:</div>
+                    <div class="timer-digits">
+                        <span class="time-unit">${time.hours.toString().padStart(2, '0')}</span>
+                        <span class="time-separator">:</span>
+                        <span class="time-unit">${time.minutes.toString().padStart(2, '0')}</span>
+                        <span class="time-separator">:</span>
+                        <span class="time-unit">${time.seconds.toString().padStart(2, '0')}</span>
+                    </div>
+                    <div class="timer-labels">
+                        <span>Hours</span>
+                        <span>Minutes</span>
+                        <span>Seconds</span>
+                    </div>
+                </div>
+            `;
+        }
 
-            submitButton.disabled = true;
-            nameInput.disabled = true;
-            emailInput.disabled = true;
-            messageInput.disabled = true;
-
-            if (timeLeft.remainingMs > 1000) {
-                setTimeout(() => {
-                    updateCooldownTimer({
-                        remainingMs: timeLeft.remainingMs - 1000
-                    });
-                }, 1000);
-            }
+        // Function to start countdown timer
+        function startCountdownTimer(remainingMs) {
+            if (!remainingMs || remainingMs <= 0) return;
+            
+            updateTimerDisplay(remainingMs);
+            
+            const timerInterval = setInterval(() => {
+                remainingMs -= 1000;
+                
+                if (remainingMs <= 0) {
+                    clearInterval(timerInterval);
+                    updateTimerDisplay(0);
+                    location.reload(); // Refresh page when timer completes
+                } else {
+                    updateTimerDisplay(remainingMs);
+                }
+            }, 1000);
         }
 
         // Function to check cooldown status
@@ -168,9 +195,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (!data.allowed && data.remainingMs > 0) {
-                    updateCooldownTimer({
-                        remainingMs: data.remainingMs
-                    });
+                    startCountdownTimer(data.remainingMs);
+                    submitButton.disabled = true;
+                    nameInput.disabled = true;
+                    emailInput.disabled = true;
+                    messageInput.disabled = true;
                 } else {
                     nameInput.disabled = false;
                     emailInput.disabled = false;
@@ -247,14 +276,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Update cooldown timer immediately
                     if (data.remainingMs) {
-                        updateCooldownTimer({
-                            remainingMs: data.remainingMs
-                        });
+                        startCountdownTimer(data.remainingMs);
                     } else {
                         // Default 12-hour cooldown if remainingMs is not provided
-                        updateCooldownTimer({
-                            remainingMs: 12 * 60 * 60 * 1000
-                        });
+                        startCountdownTimer(12 * 60 * 60 * 1000);
                     }
                     
                     // Disable form inputs during cooldown
@@ -263,9 +288,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     messageInput.disabled = true;
                 } else {
                     if (data.remainingMs) {
-                        updateCooldownTimer({
-                            remainingMs: data.remainingMs
-                        });
+                        startCountdownTimer(data.remainingMs);
                         formMessage.textContent = `Please wait ${Math.floor(data.remainingMs / (60 * 60 * 1000))} hours before sending another message`;
                     } else {
                         throw new Error(data.error || 'Failed to send message');

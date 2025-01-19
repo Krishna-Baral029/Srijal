@@ -240,6 +240,65 @@
 }
 
 /* Countdown Timer Styles */
+.timer-container {
+    background: rgba(255, 68, 68, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timer-label {
+    color: #ff4444;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.timer-digits {
+    font-family: 'Courier New', monospace;
+    font-size: 2em;
+    font-weight: bold;
+    color: #ff4444;
+    margin: 10px 0;
+    letter-spacing: 2px;
+}
+
+.time-unit {
+    background: rgba(255, 68, 68, 0.2);
+    padding: 5px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    min-width: 1.5em;
+}
+
+.time-separator {
+    color: #ff4444;
+    margin: 0 5px;
+    animation: blink 1s infinite;
+}
+
+.timer-labels {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    color: #666;
+    font-size: 0.8em;
+    margin-top: 5px;
+}
+
+.timer-labels span {
+    flex: 1;
+    max-width: 80px;
+    text-align: center;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
 #countdown {
     text-align: center;
     margin-top: 1rem;
