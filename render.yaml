@@ -2,6 +2,7 @@ services:
   - type: web
     name: srijal-portfolio
     env: python
+    region: oregon
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn server.app:app
     envVars:
@@ -19,7 +20,8 @@ services:
         name: Cache-Control
         value: public, max-age=31536000
     disk:
-      name: data
+      name: sqlite-data
       mountPath: /data
       sizeGB: 1
     healthCheckPath: /
+    plan: free  # You can change this to starter/standard based on your needs
