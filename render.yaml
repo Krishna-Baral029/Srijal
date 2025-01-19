@@ -2,7 +2,7 @@ services:
   - type: web
     name: portfolio
     env: node
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: node server/server.js
     envVars:
       - key: NODE_ENV
@@ -16,3 +16,26 @@ services:
       - key: ACCESS_TOKEN_SECRET
         generateValue: true
     autoDeploy: true
+    buildFilter:
+      paths:
+        - server/**
+        - package.json
+        - package-lock.json
+        - "*.js"
+        - "*.html"
+        - css/**
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=31536000
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    healthCheckPath: /
+    numInstances: 1
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+      targetMemoryPercent: 80
+      targetCPUPercent: 80
