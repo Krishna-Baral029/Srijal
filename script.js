@@ -200,60 +200,52 @@ document.addEventListener('DOMContentLoaded', function() {
                     nameInput.disabled = true;
                     emailInput.disabled = true;
                     messageInput.disabled = true;
+                    formMessage.textContent = 'Please wait for the cooldown period to end';
+                    formMessage.style.color = '#ff4444';
                 } else {
+                    submitButton.disabled = false;
                     nameInput.disabled = false;
                     emailInput.disabled = false;
                     validateInputs();
                 }
             } catch (error) {
-                console.error('Error checking cooldown status:', error);
-                // Keep the form enabled if there's an error checking status
-                nameInput.disabled = false;
-                emailInput.disabled = false;
-                validateInputs();
+                console.error('Error checking status:', error);
+                formMessage.textContent = 'Error checking status. Please try again later.';
+                formMessage.style.color = '#ff4444';
             }
         }
 
-        // Check cooldown status immediately and every 3 seconds
+        // Check cooldown status immediately and periodically
         checkCooldownStatus();
-        const statusInterval = setInterval(checkCooldownStatus, 3000);
+        setInterval(checkCooldownStatus, 3000);
 
-        // Clean up interval when page is unloaded
-        window.addEventListener('unload', () => {
-            clearInterval(statusInterval);
-        });
-
-        contactForm.addEventListener('submit', async function(e) {
+        contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            if (isSubmitting) {
-                return;
-            }
-
+            if (isSubmitting) return;
+            
             const name = nameInput.value.trim();
             const email = emailInput.value.trim();
             const message = messageInput.value.trim();
-
+            
             if (!name || !email || !message) {
                 formMessage.textContent = 'Please fill in all fields';
-                formMessage.style.color = 'red';
+                formMessage.style.color = '#ff4444';
                 return;
             }
-
+            
             if (!validateEmail(email)) {
                 formMessage.textContent = 'Please enter a valid email address';
-                formMessage.style.color = 'red';
+                formMessage.style.color = '#ff4444';
                 return;
             }
-
+            
+            isSubmitting = true;
+            submitButton.disabled = true;
+            formMessage.textContent = 'Sending message...';
+            formMessage.style.color = '#666';
+            
             try {
-                isSubmitting = true;
-                submitButton.disabled = true;
-                submitButton.textContent = 'Sending...';
-                formMessage.textContent = 'Sending your message...';
-                formMessage.style.color = '#64ffda';
-                validateInputs();
-
                 const baseUrl = await getApiBaseUrl();
                 const response = await fetch(`${baseUrl}/api/contact`, {
                     method: 'POST',
@@ -263,45 +255,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({ name, email, message }),
                     credentials: 'include'
                 });
-
+                
                 const data = await response.json();
-
-                if (data.success) {
-                    formMessage.innerHTML = 'Message Sent Successfully ✅ <i class="fas fa-check-circle success-icon"></i>';
-                    formMessage.style.color = '#64ffda';
-                    formMessage.classList.add('success-animation');
-                    submitButton.textContent = 'Send Message';
-                    submitButton.disabled = true;
+                
+                if (response.ok) {
+                    formMessage.textContent = 'Message sent successfully!';
+                    formMessage.style.color = '#4CAF50';
                     contactForm.reset();
                     
-                    // Update cooldown timer immediately
+                    // Start the cooldown timer immediately
                     if (data.remainingMs) {
                         startCountdownTimer(data.remainingMs);
-                    } else {
-                        // Default 12-hour cooldown if remainingMs is not provided
-                        startCountdownTimer(12 * 60 * 60 * 1000);
+                        nameInput.disabled = true;
+                        emailInput.disabled = true;
+                        messageInput.disabled = true;
                     }
-                    
-                    // Disable form inputs during cooldown
-                    nameInput.disabled = true;
-                    emailInput.disabled = true;
-                    messageInput.disabled = true;
                 } else {
                     if (data.remainingMs) {
                         startCountdownTimer(data.remainingMs);
-                        formMessage.textContent = `Please wait ${Math.floor(data.remainingMs / (60 * 60 * 1000))} hours before sending another message`;
+                        nameInput.disabled = true;
+                        emailInput.disabled = true;
+                        messageInput.disabled = true;
+                        formMessage.textContent = `Please wait ${Math.ceil(data.remainingHours)} hours before sending another message`;
                     } else {
                         throw new Error(data.error || 'Failed to send message');
                     }
                 }
             } catch (error) {
                 console.error('Error:', error);
-                formMessage.textContent = error.message || 'Failed to send message. Please try again later.';
-                formMessage.style.color = 'red';
-                submitButton.textContent = 'Send Message';
+                formMessage.textContent = error.message || 'An error occurred. Please try again later.';
+                formMessage.style.color = '#ff4444';
+                submitButton.disabled = false;
             } finally {
                 isSubmitting = false;
-                validateInputs();
             }
         });
     }
