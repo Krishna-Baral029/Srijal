@@ -14,22 +14,16 @@ const db = new sqlite3.Database('./rate_limits.db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Email transporter configuration
+// Configure nodemailer transporter
 const transporter = nodemailer.createTransport({
     service: 'gmail',
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    },
-    tls: {
-        rejectUnauthorized: false
     }
 });
 
-// Verify email configuration on startup
+// Verify email configuration
 transporter.verify((error, success) => {
     if (error) {
         console.error('Email configuration error:', error);
@@ -320,46 +314,34 @@ app.post('/api/contact', async (req, res) => {
             return res.status(400).json({ error: 'Invalid email format' });
         }
 
-        // Send email
-        try {
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: process.env.EMAIL_USER,
-                subject: `Portfolio Contact: ${name}`,
-                text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}\nIP: ${ipAddress}`,
-                html: `
-                    <h3>New Contact Form Submission</h3>
-                    <p><strong>Name:</strong> ${name}</p>
-                    <p><strong>Email:</strong> ${email}</p>
-                    <p><strong>Message:</strong> ${message}</p>
-                    <p><small>Sent from IP: ${ipAddress}</small></p>
-                `
-            };
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: process.env.EMAIL_USER,
+            subject: `Portfolio Contact from ${name}`,
+            text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+            html: `
+                <h3>New Contact Message</h3>
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Message:</strong> ${message}</p>
+            `
+        };
 
-            await transporter.sendMail(mailOptions);
-            
-            // Record the attempt only after successful email send
-            await recordAttempt(ipAddress);
+        await transporter.sendMail(mailOptions);
+        
+        // Record successful attempt
+        await recordAttempt(req, true);
 
-            // Get updated cooldown time
-            const updatedStatus = await getRemainingCooldown(ipAddress);
-            
-            res.json({
-                success: true,
-                message: 'Message sent successfully',
-                remainingMs: updatedStatus.remainingMs,
-                remainingHours: updatedStatus.remainingHours
-            });
-        } catch (emailError) {
-            console.error('Email sending error:', emailError);
-            throw new Error('Failed to send email: ' + emailError.message);
-        }
+        res.status(200).json({
+            success: true,
+            message: 'Message sent successfully'
+        });
 
     } catch (error) {
-        console.error('Contact form error:', error);
-        res.status(500).json({ 
-            error: 'Failed to send message',
-            message: error.message
+        console.error('Error sending email:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to send message'
         });
     }
 });
