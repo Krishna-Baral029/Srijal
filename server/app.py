@@ -1,12 +1,19 @@
+import os
+import sys
+from pathlib import Path
+
+# Add the parent directory to Python path
+current_dir = Path(__file__).resolve().parent
+sys.path.insert(0, str(current_dir))
+
 from flask import Flask, request, jsonify
 from flask_mail import Mail, Message
 from flask_cors import CORS
-import os
 import logging
 from datetime import datetime, timedelta
 import time
 from dotenv import load_dotenv
-from database import validate_email, init_db, can_send_message, update_last_message_time, is_valid_email
+from .database import validate_email, init_db, can_send_message, update_last_message_time, is_valid_email
 
 # Load environment variables
 load_dotenv()
