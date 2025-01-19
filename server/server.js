@@ -275,18 +275,6 @@ const checkRateLimit = async (req, res, next) => {
     }
 };
 
-// Check status endpoint
-app.post('/api/check-status', async (req, res) => {
-    try {
-        const ipAddress = req.ip || req.connection.remoteAddress;
-        const status = await checkRateLimitStatus(ipAddress);
-        res.json(status);
-    } catch (error) {
-        console.error('Status check error:', error);
-        res.status(500).json({ error: 'Failed to check status' });
-    }
-});
-
 // Contact form endpoint
 app.post('/api/contact', async (req, res) => {
     try {
@@ -298,6 +286,7 @@ app.post('/api/contact', async (req, res) => {
         if (!rateLimitStatus.allowed) {
             return res.status(429).json({
                 error: 'Rate limit exceeded',
+                message: `Please wait ${Math.ceil(rateLimitStatus.remainingHours)} hours before sending another message`,
                 remainingMs: rateLimitStatus.remainingMs,
                 remainingHours: rateLimitStatus.remainingHours
             });
@@ -318,50 +307,57 @@ app.post('/api/contact', async (req, res) => {
             from: process.env.EMAIL_USER,
             to: process.env.EMAIL_USER,
             subject: `Portfolio Contact from ${name}`,
-            text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+            text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}\nIP: ${ipAddress}`,
             html: `
                 <h3>New Contact Message</h3>
                 <p><strong>Name:</strong> ${name}</p>
                 <p><strong>Email:</strong> ${email}</p>
                 <p><strong>Message:</strong> ${message}</p>
+                <p><small>Sent from IP: ${ipAddress}</small></p>
             `
         };
 
         await transporter.sendMail(mailOptions);
-        
-        // Record successful attempt
-        await recordAttempt(req, true);
+        await recordAttempt(ipAddress);
 
+        // Get updated cooldown time after recording attempt
+        const updatedStatus = await checkRateLimitStatus(ipAddress);
+        
         res.status(200).json({
             success: true,
-            message: 'Message sent successfully'
+            message: 'Message sent successfully',
+            remainingMs: updatedStatus.remainingMs,
+            remainingHours: updatedStatus.remainingHours
         });
 
     } catch (error) {
-        console.error('Error sending email:', error);
+        console.error('Error:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to send message'
+            error: 'Failed to send message',
+            message: error.message
         });
     }
 });
 
-// Graceful shutdown
-function cleanup() {
-    console.log('Server shutting down...');
-    if (db) {
-        db.close(() => {
-            console.log('Database connection closed.');
-            process.exit(0);
+// Add status check endpoint
+app.post('/api/check-status', async (req, res) => {
+    try {
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        const status = await checkRateLimitStatus(ipAddress);
+        
+        res.json({
+            allowed: status.allowed,
+            remainingMs: status.remainingMs,
+            remainingHours: status.remainingHours,
+            message: status.allowed ? 'You can send a message' : 
+                `Please wait ${Math.ceil(status.remainingHours)} hours before sending another message`
         });
-    } else {
-        process.exit(0);
+    } catch (error) {
+        console.error('Status check error:', error);
+        res.status(500).json({ error: 'Failed to check status' });
     }
-}
-
-process.on('SIGINT', cleanup);
-process.on('SIGTERM', cleanup);
-process.on('exit', cleanup);
+});
 
 // Mobile-specific endpoint
 app.get('/mobile', (req, res) => {
