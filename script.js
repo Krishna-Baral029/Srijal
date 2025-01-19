@@ -200,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     nameInput.disabled = true;
                     emailInput.disabled = true;
                     messageInput.disabled = true;
-                    formMessage.textContent = 'Please wait for the cooldown period to end';
+                    formMessage.textContent = data.message;
                     formMessage.style.color = '#ff4444';
                 } else {
                     submitButton.disabled = false;
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    formMessage.textContent = 'Message sent successfully!';
+                    formMessage.textContent = data.message;
                     formMessage.style.color = '#4CAF50';
                     contactForm.reset();
                     
@@ -276,7 +276,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         nameInput.disabled = true;
                         emailInput.disabled = true;
                         messageInput.disabled = true;
-                        formMessage.textContent = `Please wait ${Math.ceil(data.remainingHours)} hours before sending another message`;
+                        formMessage.textContent = data.error;
+                        formMessage.style.color = '#ff4444';
                     } else {
                         throw new Error(data.error || 'Failed to send message');
                     }

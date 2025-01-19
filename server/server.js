@@ -252,6 +252,14 @@ app.use(checkAccessToken);
 // Rate limiting with SQLite
 const { generateDeviceFingerprint, checkRateLimitStatus, getRemainingCooldown, recordAttempt } = require('./database');
 
+// Helper function to format time
+function formatTimeRemaining(milliseconds) {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
+    return { hours, minutes, seconds };
+}
+
 // Rate limit middleware
 const checkRateLimit = async (req, res, next) => {
     try {
@@ -284,9 +292,9 @@ app.post('/api/contact', async (req, res) => {
         const rateLimitStatus = await checkRateLimitStatus(ipAddress);
         
         if (!rateLimitStatus.allowed) {
+            const time = formatTimeRemaining(rateLimitStatus.remainingMs);
             return res.status(429).json({
-                error: 'Rate limit exceeded',
-                message: `Please wait ${Math.ceil(rateLimitStatus.remainingHours)} hours before sending another message`,
+                error: `Rate limit exceeded. You can send another message after ${time.hours} hours ${time.minutes} minutes ${time.seconds} seconds.`,
                 remainingMs: rateLimitStatus.remainingMs,
                 remainingHours: rateLimitStatus.remainingHours
             });
@@ -322,10 +330,11 @@ app.post('/api/contact', async (req, res) => {
 
         // Get updated cooldown time after recording attempt
         const updatedStatus = await checkRateLimitStatus(ipAddress);
+        const time = formatTimeRemaining(updatedStatus.remainingMs);
         
         res.status(200).json({
             success: true,
-            message: 'Message sent successfully',
+            message: `Message sent successfully! You can send another message after ${time.hours} hours ${time.minutes} minutes ${time.seconds} seconds.`,
             remainingMs: updatedStatus.remainingMs,
             remainingHours: updatedStatus.remainingHours
         });
@@ -346,13 +355,20 @@ app.post('/api/check-status', async (req, res) => {
         const ipAddress = req.ip || req.connection.remoteAddress;
         const status = await checkRateLimitStatus(ipAddress);
         
-        res.json({
-            allowed: status.allowed,
-            remainingMs: status.remainingMs,
-            remainingHours: status.remainingHours,
-            message: status.allowed ? 'You can send a message' : 
-                `Please wait ${Math.ceil(status.remainingHours)} hours before sending another message`
-        });
+        if (!status.allowed) {
+            const time = formatTimeRemaining(status.remainingMs);
+            res.json({
+                allowed: false,
+                remainingMs: status.remainingMs,
+                remainingHours: status.remainingHours,
+                message: `Rate limit exceeded. You can send another message after ${time.hours} hours ${time.minutes} minutes ${time.seconds} seconds.`
+            });
+        } else {
+            res.json({
+                allowed: true,
+                message: 'You can send a message'
+            });
+        }
     } catch (error) {
         console.error('Status check error:', error);
         res.status(500).json({ error: 'Failed to check status' });
