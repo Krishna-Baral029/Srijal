@@ -112,35 +112,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Function to update timer display
-    function updateTimerDisplay(remainingMs) {
+    function updateTimerDisplay(remainingTime) {
         const countdownElement = document.getElementById('countdown');
         if (!countdownElement) return;
 
-        if (!remainingMs || remainingMs <= 0) {
+        if (remainingTime <= 0) {
             countdownElement.style.display = 'none';
             return;
         }
 
-        const time = formatTimeRemaining(remainingMs);
-        
+        // Convert milliseconds to hours, minutes, seconds
+        const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+        const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+
         countdownElement.style.display = 'block';
         countdownElement.innerHTML = `
-            <div class="timer-container">
-                <div class="timer-label">You can send another message after:</div>
-                <div class="timer-digits">
-                    <span class="time-unit">${String(time.hours).padStart(2, '0')}</span>
-                    <span class="time-separator">:</span>
-                    <span class="time-unit">${String(time.minutes).padStart(2, '0')}</span>
-                    <span class="time-separator">:</span>
-                    <span class="time-unit">${String(time.seconds).padStart(2, '0')}</span>
-                </div>
-                <div class="timer-labels">
-                    <span>Hours</span>
-                    <span>Minutes</span>
-                    <span>Seconds</span>
-                </div>
+            <div class="cooldown-message">Please wait before sending another message</div>
+            <div class="timer">
+                Time remaining: ${hours}h ${minutes}m ${seconds}s
             </div>
         `;
+
+        // Update the timer every second
+        if (remainingTime > 1000) {
+            setTimeout(() => updateTimerDisplay(remainingTime - 1000), 1000);
+        }
     }
 
     // Contact form submission

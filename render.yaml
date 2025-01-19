@@ -6,7 +6,7 @@ services:
     startCommand: gunicorn server.app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.13.0
+        value: 3.11.0  # Changed to a more stable version
       - key: PORT
         value: 10000
     autoDeploy: true
