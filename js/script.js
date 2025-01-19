@@ -98,10 +98,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const email = emailInput.value.trim();
             const isEmailValid = validateEmail(email);
 
-            messageInput.disabled = !(name && email && isEmailValid) || isSubmitting;
             messageInput.placeholder = isSubmitting ? 'Please wait for the cooldown to finish' : 
                                     (!name || !email || !isEmailValid) ? 'Please fill in name and email first' : 
                                     'Your message';
+            
+            // Enable/disable submit button instead of message field
+            submitButton.disabled = !name || !email || !isEmailValid || isSubmitting;
         }
 
         // Add input listeners
