@@ -113,32 +113,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Function to update cooldown timer
         function updateCooldownTimer(timeLeft) {
-            if (!timeLeft || timeLeft.totalMs <= 0) {
+            const countdownElement = document.getElementById('countdown');
+            
+            if (!timeLeft || timeLeft.remainingMs <= 0) {
                 submitButton.disabled = false;
                 nameInput.disabled = false;
                 emailInput.disabled = false;
                 messageInput.disabled = false;
-                document.getElementById('countdown').textContent = '';
+                countdownElement.textContent = '';
+                countdownElement.style.display = 'none';
                 return;
             }
 
-            const hours = Math.floor(timeLeft.totalMs / (60 * 60 * 1000));
-            const minutes = Math.floor((timeLeft.totalMs % (60 * 60 * 1000)) / (60 * 1000));
-            const seconds = Math.floor((timeLeft.totalMs % (60 * 1000)) / 1000);
+            const hours = Math.floor(timeLeft.remainingMs / (60 * 60 * 1000));
+            const minutes = Math.floor((timeLeft.remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+            const seconds = Math.floor((timeLeft.remainingMs % (60 * 1000)) / 1000);
 
-            document.getElementById('countdown').textContent = 
-                `Please wait ${hours}h ${minutes}m ${seconds}s before sending another message`;
-            document.getElementById('countdown').style.color = '#ff4444';
+            countdownElement.style.display = 'block';
+            countdownElement.textContent = `Please wait ${hours}h ${minutes}m ${seconds}s before sending another message`;
+            countdownElement.style.color = '#ff4444';
+            countdownElement.style.marginTop = '10px';
+            countdownElement.style.fontWeight = 'bold';
 
             submitButton.disabled = true;
             nameInput.disabled = true;
             emailInput.disabled = true;
             messageInput.disabled = true;
 
-            if (timeLeft.totalMs > 1000) {
+            if (timeLeft.remainingMs > 1000) {
                 setTimeout(() => {
                     updateCooldownTimer({
-                        totalMs: timeLeft.totalMs - 1000
+                        remainingMs: timeLeft.remainingMs - 1000
                     });
                 }, 1000);
             }
@@ -156,14 +161,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     credentials: 'include'
                 });
                 
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
                 const data = await response.json();
                 
-                if (!data.canSendMessage && data.timeLeft) {
-                    updateCooldownTimer(data.timeLeft);
-                    nameInput.disabled = true;
-                    emailInput.disabled = true;
-                    messageInput.disabled = true;
-                    submitButton.disabled = true;
+                if (!data.allowed && data.remainingMs > 0) {
+                    updateCooldownTimer({
+                        remainingMs: data.remainingMs
+                    });
                 } else {
                     nameInput.disabled = false;
                     emailInput.disabled = false;
@@ -171,14 +178,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Error checking cooldown status:', error);
+                // Keep the form enabled if there's an error checking status
+                nameInput.disabled = false;
+                emailInput.disabled = false;
+                validateInputs();
             }
         }
 
-        // Check cooldown status immediately and every minute
+        // Check cooldown status immediately and every 3 seconds
         checkCooldownStatus();
-        const statusInterval = setInterval(checkCooldownStatus, 60000);
+        const statusInterval = setInterval(checkCooldownStatus, 3000);
 
-        // Clear interval when page is unloaded
+        // Clean up interval when page is unloaded
         window.addEventListener('unload', () => {
             clearInterval(statusInterval);
         });
@@ -235,15 +246,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     contactForm.reset();
                     
                     // Update cooldown timer immediately
-                    if (data.timeLeft) {
-                        updateCooldownTimer(data.timeLeft);
-                    } else {
-                        // Default 12-hour cooldown if timeLeft is not provided
+                    if (data.remainingMs) {
                         updateCooldownTimer({
-                            hours: 12,
-                            minutes: 0,
-                            seconds: 0,
-                            totalMs: 12 * 60 * 60 * 1000
+                            remainingMs: data.remainingMs
+                        });
+                    } else {
+                        // Default 12-hour cooldown if remainingMs is not provided
+                        updateCooldownTimer({
+                            remainingMs: 12 * 60 * 60 * 1000
                         });
                     }
                     
@@ -252,9 +262,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     emailInput.disabled = true;
                     messageInput.disabled = true;
                 } else {
-                    if (data.timeLeft) {
-                        updateCooldownTimer(data.timeLeft);
-                        formMessage.textContent = `Please wait ${Math.floor(data.timeLeft.totalMs / (60 * 60 * 1000))} hours before sending another message`;
+                    if (data.remainingMs) {
+                        updateCooldownTimer({
+                            remainingMs: data.remainingMs
+                        });
+                        formMessage.textContent = `Please wait ${Math.floor(data.remainingMs / (60 * 60 * 1000))} hours before sending another message`;
                     } else {
                         throw new Error(data.error || 'Failed to send message');
                     }

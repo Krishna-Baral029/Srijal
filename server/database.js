@@ -46,13 +46,21 @@ async function checkRateLimitStatus(deviceId) {
 
                 const lastAttempt = new Date(row.last_attempt);
                 const now = new Date();
-                const hoursDiff = (now - lastAttempt) / (1000 * 60 * 60);
+                const timeDiffMs = now - lastAttempt;
+                const hoursDiff = timeDiffMs / (1000 * 60 * 60);
+                const cooldownHours = 12;
 
-                // If more than 12 hours have passed, allow new message
-                if (hoursDiff >= 12) {
+                // If exactly or more than 12 hours have passed, allow new message
+                if (hoursDiff >= cooldownHours) {
                     resolve(true);
                 } else {
-                    resolve(false);
+                    // Calculate remaining time more precisely
+                    const remainingMs = (cooldownHours * 60 * 60 * 1000) - timeDiffMs;
+                    resolve({
+                        allowed: false,
+                        remainingMs: remainingMs,
+                        remainingHours: remainingMs / (1000 * 60 * 60)
+                    });
                 }
             }
         );

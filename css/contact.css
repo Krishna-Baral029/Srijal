@@ -226,6 +226,17 @@
     padding: 0.5rem;
     line-height: 1.5;
     word-wrap: break-word;
+    background-color: rgba(255, 68, 68, 0.1);
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin-top: 15px;
+    text-align: center;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.countdown:empty {
+    display: none;
 }
 
 /* Countdown Timer Styles */
