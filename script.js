@@ -288,13 +288,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     formMessage.style.color = '#4CAF50';
                     contactForm.reset();
                     
-                    // Start the cooldown timer immediately
-                    if (data.remainingMs) {
-                        startCountdownTimer(data.remainingMs);
-                        nameInput.disabled = true;
-                        emailInput.disabled = true;
-                        messageInput.disabled = true;
-                    }
+                    // Show success message for 5 seconds before showing timer
+                    setTimeout(() => {
+                        // Start the cooldown timer
+                        if (data.remainingMs) {
+                            startCountdownTimer(data.remainingMs);
+                            nameInput.disabled = true;
+                            emailInput.disabled = true;
+                            messageInput.disabled = true;
+                        }
+                    }, 5000);
                 } else {
                     if (data.remainingMs) {
                         startCountdownTimer(data.remainingMs);

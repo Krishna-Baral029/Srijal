@@ -293,7 +293,7 @@ app.post('/api/contact', async (req, res) => {
         
         if (!rateLimitStatus.allowed) {
             return res.status(429).json({
-                error: `Rate limit exceeded. You can send another message after ${rateLimitStatus.remainingHours} hours ${rateLimitStatus.remainingMinutes} minutes ${rateLimitStatus.remainingSeconds} seconds.`,
+                error: 'Rate limit exceeded.',
                 remainingMs: rateLimitStatus.remainingMs,
                 remainingHours: rateLimitStatus.remainingHours,
                 remainingMinutes: rateLimitStatus.remainingMinutes,
@@ -334,7 +334,7 @@ app.post('/api/contact', async (req, res) => {
         
         res.status(200).json({
             success: true,
-            message: `Message sent successfully! You can send another message after ${updatedStatus.remainingHours} hours ${updatedStatus.remainingMinutes} minutes ${updatedStatus.remainingSeconds} seconds.`,
+            message: 'Message sent successfully! ✉️',
             remainingMs: updatedStatus.remainingMs,
             remainingHours: updatedStatus.remainingHours,
             remainingMinutes: updatedStatus.remainingMinutes,
@@ -364,7 +364,7 @@ app.post('/api/check-status', async (req, res) => {
                 remainingHours: status.remainingHours,
                 remainingMinutes: status.remainingMinutes,
                 remainingSeconds: status.remainingSeconds,
-                message: `Rate limit exceeded. You can send another message after ${status.remainingHours} hours ${status.remainingMinutes} minutes ${status.remainingSeconds} seconds.`
+                message: 'Rate limit exceeded.'
             });
         } else {
             res.json({
