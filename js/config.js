@@ -8,12 +8,12 @@ const config = {
     
     // Get the appropriate server URL
     get SERVER_URL() {
-        // If running locally, use development URL
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return this.DEV_SERVER_URL;
+        // In production, use the current origin (same domain as frontend)
+        if (window.location.hostname !== 'localhost') {
+            return window.location.origin;
         }
-        // Otherwise use production URL
-        return this.PROD_SERVER_URL;
+        // For local development
+        return this.DEV_SERVER_URL;
     }
 };
 
