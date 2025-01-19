@@ -1,12 +1,27 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_mail import Mail, Message
 import database
 from datetime import datetime
 import os
 from functools import wraps
 import time
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
+
+# Mail configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')
+app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('EMAIL_USER')
+
+mail = Mail(app)
 
 # Security headers
 @app.after_request
@@ -119,13 +134,37 @@ def send_message():
             'remainingTime': remaining_time * 1000
         })
     
-    # Update the cooldown timer for this user
-    database.update_last_message_time(request)
-    
-    return jsonify({
-        'success': True,
-        'message': 'Message sent successfully'
-    })
+    try:
+        # Send email
+        msg = Message(
+            subject=f"New Portfolio Message from {data['name']}",
+            recipients=[os.getenv('EMAIL_USER')],
+            body=f"""
+            New message from your portfolio website:
+            
+            Name: {data['name']}
+            Email: {data['email']}
+            
+            Message:
+            {data['message']}
+            """
+        )
+        mail.send(msg)
+        
+        # Update the cooldown timer for this user
+        database.update_last_message_time(request)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Message sent successfully'
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error sending email: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Error sending message. Please try again.'
+        }), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
