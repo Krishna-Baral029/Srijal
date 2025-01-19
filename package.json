@@ -1,0 +1,12 @@
+{
+  "name": "srijal-portfolio",
+  "version": "1.0.0",
+  "description": "Srijal's Portfolio Website",
+  "main": "js/script.js",
+  "scripts": {
+    "start": "python -m http.server"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

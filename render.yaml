@@ -26,6 +26,8 @@ services:
         value: https://srijal-portfolio.onrender.com,https://sandeshbro-ux.github.io
       - key: PYTHONUNBUFFERED
         value: "true"
+      - key: PYTHONPATH
+        value: /opt/render/project/src
     autoDeploy: true
     buildFilter:
       paths:

@@ -1,14 +1,22 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from flask_mail import Mail, Message
-import database
-from datetime import datetime
+from flask_cors import CORS
+import sys
 import os
-from functools import wraps
+from pathlib import Path
+
+# Add the server directory to Python path
+server_dir = Path(__file__).resolve().parent
+if str(server_dir) not in sys.path:
+    sys.path.append(str(server_dir))
+
+from database import validate_email, init_db, can_send_message, update_last_message_time, is_valid_email
+from datetime import datetime
 import time
 from dotenv import load_dotenv
 import logging
 import ssl
+from functools import wraps
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -102,12 +110,12 @@ def send_email_with_retry(msg, max_retries=3):
             time.sleep(1)  # Wait before retrying
 
 # Initialize the database
-database.init_db()
+init_db()
 
 @app.route('/api/check-cooldown', methods=['POST'])
 @rate_limit(limit=10, window=60)  # 10 requests per minute
 def check_cooldown():
-    can_send, remaining_time = database.can_send_message(request)
+    can_send, remaining_time = can_send_message(request)
     
     return jsonify({
         'canSend': can_send,
@@ -141,13 +149,13 @@ def send_message():
         }), 400
     
     # Validate email format
-    if not database.is_valid_email(data['email']):
+    if not is_valid_email(data['email']):
         return jsonify({
             'success': False,
             'error': 'Invalid email format'
         }), 400
     
-    can_send, remaining_time = database.can_send_message(request)
+    can_send, remaining_time = can_send_message(request)
     
     if not can_send:
         return jsonify({
@@ -179,7 +187,7 @@ def send_message():
         send_email_with_retry(msg)
         
         # Update the cooldown timer for this user
-        database.update_last_message_time(request)
+        update_last_message_time(request)
         
         logger.info(f"Message sent successfully from {data['email']}")
         return jsonify({
