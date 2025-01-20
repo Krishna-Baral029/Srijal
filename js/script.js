@@ -14,10 +14,10 @@ function loadTypedJs() {
 
 // Custom typewriter animation
 const texts = [
-    '  Web Developer 🌐',
-    '  UI Designer 🎨',
-    '  Full-Stack Developer ⚡',
-    '  Hotel Management Student 🏨'
+    'Web  Developer 🌐',
+    'UI  Designer 🎨',
+    'Full-Stack  Developer ⚡',
+    'Hotel  Management  Student 🏨'
 ];
 
 let textIndex = 0;
@@ -307,4 +307,34 @@ buttons.forEach(button => {
             ripple.remove();
         }, 600);
     });
+});
+
+// Button shine animation
+function addShineAnimation() {
+    const buttons = document.querySelectorAll('.nav-button');
+    buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Don't add new shine if animation is already running
+            if (this.querySelector('.shine')) return;
+            
+            const shine = document.createElement('div');
+            shine.classList.add('shine');
+            this.appendChild(shine);
+
+            // Wait for animation to complete before navigating
+            shine.addEventListener('animationend', () => {
+                shine.remove();
+                window.location.href = this.href;
+            });
+        });
+    });
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Starting typewriter animation...');
+    typeWriter();
+    addShineAnimation();
 });
