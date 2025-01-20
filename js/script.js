@@ -4,24 +4,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typedElement) {
         const typed = new Typed('.typed-text', {
             strings: [
-                'Web Developer  ',  
-                'UI Designer  ',    
-                'Full-Stack Developer  ',  
-                'Hotel Management Student  '   
+                'Web Developer 🌐',  
+                'UI Designer 🎨',    
+                'Full-Stack Developer ⚡',  
+                'Hotel Management Student 🏨'   
             ],
-            typeSpeed: 50,      // Back to original speed
-            backSpeed: 30,      // Back to original speed
+            typeSpeed: 50,
+            backSpeed: 30,
             loop: true,
-            backDelay: 1500,    // Back to original delay
+            backDelay: 1500,
+            showCursor: true,
             cursorChar: '|',
-            showCursor: false,
-            startDelay: 0,      // Start immediately
-            onStringTyped: function(arrayPos) {
-                // Add emoji after typing is complete for each string
-                const emojis = ['🌐', '🎨', '⚡', '🏨'];
-                const currentString = typed.el.innerHTML;
-                typed.el.innerHTML = currentString.trimEnd() + emojis[arrayPos];
-            }
+            startDelay: 0,
+            smartBackspace: true
         });
     }
 
