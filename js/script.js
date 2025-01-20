@@ -46,9 +46,38 @@ async function initTypewriter() {
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initTypewriter);
+    document.addEventListener('DOMContentLoaded', () => {
+        initTypewriter();
+        initNavigation();
+    });
 } else {
     initTypewriter();
+    initNavigation();
+}
+
+// Initialize navigation
+function initNavigation() {
+    document.querySelectorAll('.nav-button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const href = this.getAttribute('href');
+            
+            document.querySelectorAll('.nav-button').forEach(btn => {
+                btn.classList.remove('flash');
+                btn.offsetHeight;
+            });
+            
+            this.classList.add('flash');
+            
+            setTimeout(() => {
+                window.location.href = href;
+            }, 800);
+        });
+        
+        button.addEventListener('animationend', function() {
+            this.classList.remove('flash');
+        });
+    });
 }
 
 // Function to get API base URL
@@ -263,27 +292,5 @@ buttons.forEach(button => {
         setTimeout(() => {
             ripple.remove();
         }, 600);
-    });
-});
-
-// Navigation button animation
-document.querySelectorAll('.nav-button').forEach(button => {
-    button.addEventListener('click', function(e) {
-        e.preventDefault();
-        const href = this.getAttribute('href');
-        
-        // Remove flash from all buttons
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            btn.classList.remove('flash');
-            btn.offsetHeight; // Trigger reflow
-        });
-        
-        // Add flash to clicked button
-        this.classList.add('flash');
-        
-        // Navigate after animation
-        setTimeout(() => {
-            window.location.href = href;
-        }, 800);
     });
 });
