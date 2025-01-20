@@ -22,10 +22,12 @@ from . import database
 load_dotenv()
 
 # Initialize Flask app
-app = Flask(__name__, static_folder=str(parent_dir), static_url_path='')
+app = Flask(__name__, 
+           static_folder=str(parent_dir),
+           static_url_path='')
 
 # Configure CORS
-CORS(app, resources={r"/api/*": {"origins": os.getenv('CORS_ALLOWED_ORIGINS', '*').split(',')}})
+CORS(app)
 
 # Configure Flask-Mail
 app.config.update(
@@ -43,13 +45,14 @@ mail = Mail(app)
 # Initialize database
 database.init_db()
 
-@app.route('/')
-def serve_index():
-    return send_from_directory(app.static_folder, 'index.html')
-
+@app.route('/', defaults={'path': 'index.html'})
 @app.route('/<path:path>')
 def serve_static(path):
-    return send_from_directory(app.static_folder, path)
+    try:
+        return send_from_directory(app.static_folder, path)
+    except Exception as e:
+        app.logger.error(f"Error serving {path}: {str(e)}")
+        return send_from_directory(app.static_folder, 'index.html')
 
 # API routes below
 @app.route('/api')

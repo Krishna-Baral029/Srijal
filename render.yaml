@@ -18,7 +18,15 @@ services:
       - key: EMAIL_PASS
         sync: false
       - key: CORS_ALLOWED_ORIGINS
-        value: https://sandeshbro-ux.github.io
+        value: https://srijal-2w45.onrender.com
       - key: PYTHONPATH
         value: /opt/render/project/src
+      - key: STATIC_URL_PATH
+        value: ''
+      - key: STATIC_FOLDER
+        value: /opt/render/project/src
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     autoDeploy: true
