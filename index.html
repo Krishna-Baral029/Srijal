@@ -1,15 +1,15 @@
-    git add contact.html
-git add js/config.js
-git commit -m "Improved contact form error handling and server configuration"
-git push<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https: cdn.jsdelivr.net cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https: fonts.googleapis.com cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https: fonts.gstatic.com data:;">
     <title>Dipesh Baral's Portfolio</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12" defer></script>
+    <script src="js/script.js" defer></script>
 </head>
 <body class="home-page">
     <div id="emoji-preload" style="opacity: 0; position: absolute; pointer-events: none;">
@@ -30,7 +30,7 @@ git push<!DOCTYPE html>
             <div class="hero-content">
                 <h1>Hello, I'm <span class="highlight">Dipesh Baral</span></h1>
                 <div class="dynamic-text">
-                    <span style="display: inline-block;">I'm a&nbsp;</span><span id="typed-text" class="typed-text"></span>
+                    <span>I'm a&nbsp;</span><span id="typed-text" class="typed-text"></span>
                 </div>
                 <p class="hero-description">Turning ideas into reality through code</p>
             </div>
@@ -41,32 +41,5 @@ git push<!DOCTYPE html>
             </div>
         </div>
     </section>
-
-    <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fontfaceobserver/2.3.0/fontfaceobserver.js"></script>
-    <script src="js/script.js"></script>
-    <script>
-        document.querySelectorAll('.nav-button').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const href = this.getAttribute('href');
-                
-                document.querySelectorAll('.nav-button').forEach(btn => {
-                    btn.classList.remove('flash');
-                    btn.offsetHeight;
-                });
-                
-                this.classList.add('flash');
-                
-                setTimeout(() => {
-                    window.location.href = href;
-                }, 800);
-            });
-            
-            button.addEventListener('animationend', function() {
-                this.classList.remove('flash');
-            });
-        });
-    </script>
 </body>
 </html>
