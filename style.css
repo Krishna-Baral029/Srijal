@@ -85,47 +85,14 @@ body {
     letter-spacing: 0.5px;
 }
 
-.nav-button::before {
-    content: '';
-    position: absolute;
-    bottom: -100%;
-    left: -100%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(
-        45deg,
-        transparent,
-        rgba(100, 255, 218, 0.2),
-        rgba(100, 255, 218, 0.6),
-        rgba(100, 255, 218, 0.2),
-        transparent
-    );
-    transform-origin: bottom left;
-    visibility: hidden;
-}
-
-.nav-button.flash::before {
-    visibility: visible;
-    animation: diagonal-flash 0.8s ease-out;
-}
-
-@keyframes diagonal-flash {
-    0% {
-        transform: translate(0, 0);
-    }
-    100% {
-        transform: translate(50%, -50%);
-    }
-}
-
 .nav-button:hover {
     background: rgba(100, 255, 218, 0.1);
     transform: translateY(-2px);
     box-shadow: 0 0 15px rgba(100, 255, 218, 0.3);
 }
 
-/* Shine animation */
-.shine {
+.nav-button::before {
+    content: '';
     position: absolute;
     top: -50%;
     left: -50%;
@@ -142,6 +109,11 @@ body {
     transform: rotate(45deg);
     animation: shine 1s forwards;
     pointer-events: none;
+    visibility: hidden;
+}
+
+.nav-button.flash::before {
+    visibility: visible;
 }
 
 @keyframes shine {

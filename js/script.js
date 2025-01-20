@@ -63,33 +63,23 @@ function typeWriter() {
     setTimeout(typeWriter, typingDelay);
 }
 
-// Start the animation when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Starting typewriter animation...');
-    typeWriter();
-});
-
-// Initialize navigation
+// Navigation button shine effect
 function initNavigation() {
-    document.querySelectorAll('.nav-button').forEach(button => {
+    const buttons = document.querySelectorAll('.nav-button');
+    buttons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            const href = this.getAttribute('href');
             
-            document.querySelectorAll('.nav-button').forEach(btn => {
-                btn.classList.remove('flash');
-                btn.offsetHeight;
-            });
+            // Don't add new shine if animation is already running
+            if (this.classList.contains('flash')) return;
             
             this.classList.add('flash');
-            
+
+            // Wait for animation to complete before navigating
             setTimeout(() => {
-                window.location.href = href;
-            }, 800);
-        });
-        
-        button.addEventListener('animationend', function() {
-            this.classList.remove('flash');
+                this.classList.remove('flash');
+                window.location.href = this.href;
+            }, 1000);
         });
     });
 }
@@ -271,13 +261,6 @@ if (contactForm) {
     setInterval(checkCooldown, 30000);
 }
 
-// Move the page refresh code after typed.js initialization
-if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD) {
-    if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
-        window.location.href = '/';
-    }
-}
-
 // Project cards hover effect
 const projectCards = document.querySelectorAll('.project-card');
 projectCards.forEach(card => {
@@ -309,32 +292,16 @@ buttons.forEach(button => {
     });
 });
 
-// Button shine animation
-function addShineAnimation() {
-    const buttons = document.querySelectorAll('.nav-button');
-    buttons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Don't add new shine if animation is already running
-            if (this.querySelector('.shine')) return;
-            
-            const shine = document.createElement('div');
-            shine.classList.add('shine');
-            this.appendChild(shine);
-
-            // Wait for animation to complete before navigating
-            shine.addEventListener('animationend', () => {
-                shine.remove();
-                window.location.href = this.href;
-            });
-        });
-    });
+// Move the page refresh code after typed.js initialization
+if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD) {
+    if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+        window.location.href = '/';
+    }
 }
 
-// Initialize when DOM is ready
+// Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Starting typewriter animation...');
+    console.log('Starting animations...');
     typeWriter();
-    addShineAnimation();
+    initNavigation();
 });
