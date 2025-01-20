@@ -44,7 +44,15 @@ database.init_db()
 
 @app.route('/')
 def index():
-    return jsonify({"status": "healthy"})
+    return jsonify({
+        "status": "healthy",
+        "message": "Welcome to Srijal's Portfolio API",
+        "frontend_url": "https://sandeshbro-ux.github.io",
+        "api_endpoints": {
+            "contact": "/api/contact",
+            "check_cooldown": "/api/check-cooldown"
+        }
+    })
 
 # Security headers
 @app.after_request
