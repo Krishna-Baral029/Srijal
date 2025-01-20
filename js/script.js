@@ -13,17 +13,17 @@ function loadTypedJs() {
 }
 
 // Initialize Typed.js
-async function initTypewriter() {
-    try {
-        await loadTypedJs();
-        const element = document.getElementById('typed-text');
-        if (!element) {
-            console.error('Typed element not found');
-            return;
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing Typed.js...');
+    
+    const element = document.getElementById('typed-text');
+    if (!element) {
+        console.error('Typed element not found');
+        return;
+    }
 
-        // Create Typed instance
-        new Typed('#typed-text', {
+    try {
+        const typed = new Typed('#typed-text', {
             strings: [
                 'Web Developer 🌐',
                 'UI Designer 🎨',
@@ -42,18 +42,7 @@ async function initTypewriter() {
     } catch (error) {
         console.error('Error initializing Typed.js:', error);
     }
-}
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        initTypewriter();
-        initNavigation();
-    });
-} else {
-    initTypewriter();
-    initNavigation();
-}
+});
 
 // Initialize navigation
 function initNavigation() {
