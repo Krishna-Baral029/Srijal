@@ -1,12 +1,20 @@
+import os
+import sys
+from pathlib import Path
+
+# Add the current directory to Python path
+current_dir = Path(__file__).resolve().parent
+if str(current_dir) not in sys.path:
+    sys.path.append(str(current_dir))
+
 from flask import Flask, request, jsonify
 from flask_mail import Mail, Message
 from flask_cors import CORS
-import os
 import logging
 from datetime import datetime, timedelta
 import time
 from dotenv import load_dotenv
-import database
+from . import database
 
 # Load environment variables
 load_dotenv()

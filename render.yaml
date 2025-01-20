@@ -3,7 +3,7 @@ services:
     name: srijal-portfolio-backend
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: cd server && gunicorn app:app
+    startCommand: cd server && PYTHONPATH=/opt/render/project/src python -m gunicorn app:app
     envVars:
       - key: PORT
         value: 10000
@@ -19,4 +19,6 @@ services:
         sync: false
       - key: CORS_ALLOWED_ORIGINS
         value: https://sandeshbro-ux.github.io
+      - key: PYTHONPATH
+        value: /opt/render/project/src
     autoDeploy: true
