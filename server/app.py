@@ -1,15 +1,7 @@
-import os
-import sys
-from pathlib import Path
-
-# Add the server directory to Python path
-current_dir = Path(__file__).resolve().parent
-if str(current_dir) not in sys.path:
-    sys.path.append(str(current_dir))
-
-from flask import Flask, request, jsonify, current_app
+from flask import Flask, request, jsonify
 from flask_mail import Mail, Message
 from flask_cors import CORS
+import os
 import logging
 from datetime import datetime, timedelta
 import time
@@ -19,45 +11,31 @@ import database
 # Load environment variables
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# Initialize Flask app
+app = Flask(__name__)
+
+# Configure CORS
+CORS(app, resources={r"/api/*": {"origins": os.getenv('CORS_ALLOWED_ORIGINS', '*').split(',')}})
+
+# Configure Flask-Mail
+app.config.update(
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USERNAME=os.getenv('EMAIL_USER'),
+    MAIL_PASSWORD=os.getenv('EMAIL_PASS'),
+    MAIL_DEFAULT_SENDER=os.getenv('EMAIL_USER')
 )
-logger = logging.getLogger(__name__)
 
-def create_app():
-    app = Flask(__name__)
-    
-    # Configure CORS
-    CORS(app, resources={r"/api/*": {"origins": os.getenv('CORS_ALLOWED_ORIGINS', '*').split(',')}})
-    
-    # Configure Flask-Mail
-    app.config.update(
-        MAIL_SERVER='smtp.gmail.com',
-        MAIL_PORT=587,
-        MAIL_USE_TLS=True,
-        MAIL_USERNAME=os.getenv('EMAIL_USER'),
-        MAIL_PASSWORD=os.getenv('EMAIL_PASS'),
-        MAIL_DEFAULT_SENDER=os.getenv('EMAIL_USER')
-    )
-    
-    # Initialize extensions
-    mail = Mail(app)
-    
-    # Initialize database
-    with app.app_context():
-        database.init_db()
-    
-    return app, mail
+# Initialize extensions
+mail = Mail(app)
 
-app, mail = create_app()
+# Initialize database
+database.init_db()
 
-try:
-    logger.info("Mail configuration initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize mail configuration: {e}")
-    raise
+@app.route('/')
+def index():
+    return jsonify({"status": "healthy"})
 
 # Security headers
 @app.after_request
