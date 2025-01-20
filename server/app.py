@@ -5,10 +5,11 @@ from functools import wraps
 
 # Add the current directory to Python path
 current_dir = Path(__file__).resolve().parent
+parent_dir = current_dir.parent
 if str(current_dir) not in sys.path:
     sys.path.append(str(current_dir))
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_mail import Mail, Message
 from flask_cors import CORS
 import logging
@@ -21,7 +22,7 @@ from . import database
 load_dotenv()
 
 # Initialize Flask app
-app = Flask(__name__)
+app = Flask(__name__, static_folder=str(parent_dir), static_url_path='')
 
 # Configure CORS
 CORS(app, resources={r"/api/*": {"origins": os.getenv('CORS_ALLOWED_ORIGINS', '*').split(',')}})
@@ -43,7 +44,16 @@ mail = Mail(app)
 database.init_db()
 
 @app.route('/')
-def index():
+def serve_index():
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory(app.static_folder, path)
+
+# API routes below
+@app.route('/api')
+def api_index():
     return jsonify({
         "status": "healthy",
         "message": "Welcome to Srijal's Portfolio API",
