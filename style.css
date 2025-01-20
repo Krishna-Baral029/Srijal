@@ -506,12 +506,19 @@ h2 {
 
 .typewriter {
     color: #64ffda;
+    min-width: 1ch;
+    position: relative;
+    display: inline-block;
 }
 
 .cursor {
     color: #64ffda;
     font-weight: bold;
+    opacity: 1;
+    margin-left: 2px;
     animation: blink 0.7s infinite;
+    display: inline-block;
+    user-select: none;
 }
 
 @keyframes blink {

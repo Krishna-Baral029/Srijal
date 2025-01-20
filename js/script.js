@@ -14,16 +14,21 @@ function loadTypedJs() {
 
 // Custom typewriter animation
 const texts = [
-    'Web  Developer 🌐',
-    'UI  Designer 🎨',
-    'Full-Stack  Developer ⚡',
-    'Hotel  Management  Student 🏨'
+    'Web  Developer ',
+    'UI  Designer ',
+    'Full-Stack  Developer ',
+    'Hotel  Management  Student '
 ];
 
 let textIndex = 0;
 let charIndex = 0;
 let isDeleting = false;
 let typingDelay = 100;
+
+// Add random variation to typing speed for more natural effect
+function getRandomDelay(base, variation) {
+    return Math.random() * variation + base;
+}
 
 function typeWriter() {
     const currentText = texts[textIndex];
@@ -35,29 +40,47 @@ function typeWriter() {
     }
 
     if (isDeleting) {
-        // Deleting text
+        // Deleting text - faster with slight variation
         typewriterElement.textContent = currentText.substring(0, charIndex - 1);
         charIndex--;
-        typingDelay = 50;
+        typingDelay = getRandomDelay(30, 20); // Base 30ms, +/- 20ms variation
     } else {
-        // Typing text
+        // Typing text - slower with more variation
         typewriterElement.textContent = currentText.substring(0, charIndex + 1);
         charIndex++;
-        typingDelay = 100;
+        typingDelay = getRandomDelay(80, 40); // Base 80ms, +/- 40ms variation
+        
+        // Add slight pause after typing certain punctuation
+        const lastChar = currentText[charIndex - 1];
+        if (lastChar === ',' || lastChar === '-') {
+            typingDelay += 200;
+        }
+    }
+
+    // Add cursor blink effect during longer pauses
+    const cursor = document.querySelector('.cursor');
+    if (cursor) {
+        if (!isDeleting && charIndex === currentText.length) {
+            cursor.style.opacity = '1';
+        } else {
+            cursor.style.opacity = '1';
+        }
     }
 
     // Check if word is complete
     if (!isDeleting && charIndex === currentText.length) {
-        // Start deleting after delay
+        // Start deleting after longer delay
         isDeleting = true;
-        typingDelay = 1500; // Wait before deleting
+        typingDelay = 2000; // Longer pause at the end
+        if (cursor) cursor.style.animation = 'blink 0.7s infinite';
     }
 
     // Check if word is deleted
     if (isDeleting && charIndex === 0) {
         isDeleting = false;
         textIndex = (textIndex + 1) % texts.length;
-        typingDelay = 500; // Wait before typing next word
+        typingDelay = 500; // Pause before starting next word
+        if (cursor) cursor.style.animation = 'none';
     }
 
     setTimeout(typeWriter, typingDelay);
@@ -70,12 +93,10 @@ function initNavigation() {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             
-            // Don't add new shine if animation is already running
             if (this.classList.contains('flash')) return;
             
             this.classList.add('flash');
 
-            // Wait for animation to complete before navigating
             setTimeout(() => {
                 this.classList.remove('flash');
                 window.location.href = this.href;
@@ -305,3 +326,18 @@ document.addEventListener('DOMContentLoaded', () => {
     typeWriter();
     initNavigation();
 });
+
+.replay-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.replay-button:hover {
+  background: #555;
+}
