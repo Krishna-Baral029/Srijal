@@ -20,16 +20,17 @@ body {
 .navbar {
     position: fixed;
     top: 0;
+    left: 0;
     width: 100%;
-    padding: 1rem 10%;
+    padding: 1rem 2rem;
+    background: rgba(10, 25, 47, 0.85);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: rgba(10, 25, 47, 0.95);
-    backdrop-filter: blur(10px);
-    z-index: 1000;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .logo {

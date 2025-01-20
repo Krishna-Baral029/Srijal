@@ -3,13 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https: cdn.jsdelivr.net cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https: fonts.googleapis.com cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https: fonts.gstatic.com data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https: cdn.jsdelivr.net cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https: fonts.googleapis.com cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https: fonts.gstatic.com data:; frame-ancestors 'none';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Dipesh Baral's Portfolio</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12" defer></script>
     <script src="js/script.js" defer></script>
+    <style>
+        @supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+            .navbar {
+                -webkit-backdrop-filter: blur(10px);
+                backdrop-filter: blur(10px);
+            }
+        }
+        
+        .background-clip {
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+    </style>
 </head>
 <body class="home-page">
     <div id="emoji-preload" style="opacity: 0; position: absolute; pointer-events: none;">
