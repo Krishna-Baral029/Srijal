@@ -2,47 +2,56 @@ import os
 import sys
 from pathlib import Path
 
-# Add the parent directory to Python path
+# Add the server directory to Python path
 current_dir = Path(__file__).resolve().parent
-sys.path.insert(0, str(current_dir))
+if str(current_dir) not in sys.path:
+    sys.path.append(str(current_dir))
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, current_app
 from flask_mail import Mail, Message
 from flask_cors import CORS
 import logging
 from datetime import datetime, timedelta
 import time
 from dotenv import load_dotenv
-from .database import validate_email, init_db, can_send_message, update_last_message_time, is_valid_email
+import database
 
 # Load environment variables
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Initialize Flask app
-app = Flask(__name__)
+def create_app():
+    app = Flask(__name__)
+    
+    # Configure CORS
+    CORS(app, resources={r"/api/*": {"origins": os.getenv('CORS_ALLOWED_ORIGINS', '*').split(',')}})
+    
+    # Configure Flask-Mail
+    app.config.update(
+        MAIL_SERVER='smtp.gmail.com',
+        MAIL_PORT=587,
+        MAIL_USE_TLS=True,
+        MAIL_USERNAME=os.getenv('EMAIL_USER'),
+        MAIL_PASSWORD=os.getenv('EMAIL_PASS'),
+        MAIL_DEFAULT_SENDER=os.getenv('EMAIL_USER')
+    )
+    
+    # Initialize extensions
+    mail = Mail(app)
+    
+    # Initialize database
+    with app.app_context():
+        database.init_db()
+    
+    return app, mail
 
-# Configure CORS
-CORS(app, resources={r"/api/*": {"origins": os.getenv('CORS_ALLOWED_ORIGINS', '*').split(',')}})
-
-# Configure Flask-Mail
-app.config.update(
-    MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=587,
-    MAIL_USE_TLS=True,
-    MAIL_USERNAME=os.getenv('EMAIL_USER'),
-    MAIL_PASSWORD=os.getenv('EMAIL_PASS'),
-    MAIL_DEFAULT_SENDER=os.getenv('EMAIL_USER')
-)
-
-# Initialize extensions
-mail = Mail(app)
-
-# Initialize database
-init_db()
+app, mail = create_app()
 
 try:
     logger.info("Mail configuration initialized successfully")
@@ -114,7 +123,7 @@ def send_email_with_retry(msg, max_retries=3):
 @app.route('/api/check-cooldown', methods=['POST'])
 @rate_limit(limit=10, window=60)  # 10 requests per minute
 def check_cooldown():
-    can_send, remaining_time = can_send_message(request)
+    can_send, remaining_time = database.can_send_message(request)
     
     return jsonify({
         'canSend': can_send,
@@ -148,13 +157,13 @@ def send_message():
         }), 400
     
     # Validate email format
-    if not is_valid_email(data['email']):
+    if not database.is_valid_email(data['email']):
         return jsonify({
             'success': False,
             'error': 'Invalid email format'
         }), 400
     
-    can_send, remaining_time = can_send_message(request)
+    can_send, remaining_time = database.can_send_message(request)
     
     if not can_send:
         return jsonify({
@@ -186,7 +195,7 @@ def send_message():
         send_email_with_retry(msg)
         
         # Update the cooldown timer for this user
-        update_last_message_time(request)
+        database.update_last_message_time(request)
         
         logger.info(f"Message sent successfully from {data['email']}")
         return jsonify({
@@ -200,6 +209,10 @@ def send_message():
             'success': False,
             'error': 'Error sending message. Please try again.'
         }), 500
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

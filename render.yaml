@@ -3,8 +3,12 @@ services:
     name: srijal-portfolio-backend
     runtime: python
     region: oregon
-    buildCommand: pip install -r requirements.txt
-    startCommand: cd server && PYTHONPATH=/opt/render/project/src/server gunicorn app:app --bind 0.0.0.0:$PORT
+    buildCommand: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      cd server
+      gunicorn app:app --bind 0.0.0.0:$PORT --workers 4 --threads 2 --timeout 120 --access-logfile - --error-logfile - --log-level info
     envVars:
       - key: PYTHON_VERSION
         value: 3.8.12
@@ -24,6 +28,8 @@ services:
         sync: false
       - key: CORS_ALLOWED_ORIGINS
         value: https://sandeshbro-ux.github.io
+      - key: PYTHONPATH
+        value: /opt/render/project/src/server
       - key: PYTHONUNBUFFERED
         value: "true"
     autoDeploy: true
@@ -39,5 +45,6 @@ services:
       name: sqlite-data
       mountPath: /data
       sizeGB: 1
-    healthCheckPath: /
+    healthCheckPath: /health
+    healthCheckTimeout: 100
     plan: free
