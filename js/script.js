@@ -49,22 +49,12 @@ function typeWriter() {
         typewriterElement.textContent = currentText.substring(0, charIndex + 1);
         charIndex++;
         typingDelay = getRandomDelay(80, 40); // Base 80ms, +/- 40ms variation
-        
-        // Add slight pause after typing certain punctuation
-        const lastChar = currentText[charIndex - 1];
-        if (lastChar === ',' || lastChar === '-') {
-            typingDelay += 200;
-        }
     }
 
     // Add cursor blink effect during longer pauses
     const cursor = document.querySelector('.cursor');
     if (cursor) {
-        if (!isDeleting && charIndex === currentText.length) {
-            cursor.style.opacity = '1';
-        } else {
-            cursor.style.opacity = '1';
-        }
+        cursor.style.opacity = isDeleting ? '0.5' : '1';
     }
 
     // Check if word is complete
@@ -72,7 +62,6 @@ function typeWriter() {
         // Start deleting after longer delay
         isDeleting = true;
         typingDelay = 2000; // Longer pause at the end
-        if (cursor) cursor.style.animation = 'blink 0.7s infinite';
     }
 
     // Check if word is deleted
@@ -80,7 +69,6 @@ function typeWriter() {
         isDeleting = false;
         textIndex = (textIndex + 1) % texts.length;
         typingDelay = 500; // Pause before starting next word
-        if (cursor) cursor.style.animation = 'none';
     }
 
     setTimeout(typeWriter, typingDelay);
@@ -326,18 +314,3 @@ document.addEventListener('DOMContentLoaded', () => {
     typeWriter();
     initNavigation();
 });
-
-.replay-button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  background: #333;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.replay-button:hover {
-  background: #555;
-}

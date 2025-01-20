@@ -501,29 +501,25 @@ h2 {
     margin: 1rem 0;
     display: flex;
     align-items: center;
-    gap: 5px;
     white-space: nowrap;
 }
 
-.dynamic-text span {
+.dynamic-text > span {
     display: inline-block;
 }
 
 .typewriter {
     color: #64ffda;
-    min-width: 1ch;
-    position: relative;
-    display: inline-block;
+    min-width: 10ch;
     margin-left: 8px;
+    position: relative;
 }
 
 .cursor {
     color: #64ffda;
     font-weight: bold;
-    opacity: 1;
     margin-left: 2px;
     animation: blink 0.7s infinite;
-    display: inline-block;
     user-select: none;
 }
 
