@@ -502,6 +502,11 @@ h2 {
     display: flex;
     align-items: center;
     gap: 5px;
+    white-space: nowrap;
+}
+
+.dynamic-text span {
+    display: inline-block;
 }
 
 .typewriter {
@@ -509,6 +514,7 @@ h2 {
     min-width: 1ch;
     position: relative;
     display: inline-block;
+    margin-left: 8px;
 }
 
 .cursor {
