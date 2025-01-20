@@ -22,9 +22,7 @@ from . import database
 load_dotenv()
 
 # Initialize Flask app
-app = Flask(__name__, 
-           static_folder=str(parent_dir),
-           static_url_path='')
+app = Flask(__name__, static_folder='../')
 
 # Configure CORS
 CORS(app)
@@ -58,11 +56,9 @@ def add_security_headers(response):
 @app.route('/', defaults={'path': 'index.html'})
 @app.route('/<path:path>')
 def serve_static(path):
-    try:
+    if os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
-    except Exception as e:
-        app.logger.error(f"Error serving {path}: {str(e)}")
-        return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
 # API routes below
 @app.route('/api')
