@@ -9,7 +9,7 @@ parent_dir = current_dir.parent
 if str(current_dir) not in sys.path:
     sys.path.append(str(current_dir))
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_mail import Mail, Message
 from flask_cors import CORS
 import logging
@@ -45,6 +45,16 @@ mail = Mail(app)
 # Initialize database
 database.init_db()
 
+@app.after_request
+def add_security_headers(response):
+    response.headers['Content-Security-Policy'] = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: cdn.jsdelivr.net cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https: fonts.googleapis.com cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https: fonts.gstatic.com data:;"
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    return response
+
 @app.route('/', defaults={'path': 'index.html'})
 @app.route('/<path:path>')
 def serve_static(path):
@@ -66,16 +76,6 @@ def api_index():
             "check_cooldown": "/api/check-cooldown"
         }
     })
-
-# Security headers
-@app.after_request
-def add_security_headers(response):
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['Content-Security-Policy'] = "default-src 'self'"
-    return response
 
 # Rate limiting decorator
 def rate_limit(limit=5, window=60):
