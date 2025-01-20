@@ -33,28 +33,25 @@ function getRandomDelay(base, variation) {
 function typeWriter() {
     const currentText = texts[textIndex];
     const typewriterElement = document.querySelector('.typewriter');
+    const cursor = document.querySelector('.cursor');
     
-    if (!typewriterElement) {
-        console.error('Typewriter element not found');
+    if (!typewriterElement || !cursor) {
+        console.error('Typewriter or cursor element not found');
         return;
     }
 
     if (isDeleting) {
         // Deleting text - faster with slight variation
         typewriterElement.textContent = currentText.substring(0, charIndex - 1);
+        typewriterElement.appendChild(cursor);
         charIndex--;
         typingDelay = getRandomDelay(30, 20); // Base 30ms, +/- 20ms variation
     } else {
         // Typing text - slower with more variation
         typewriterElement.textContent = currentText.substring(0, charIndex + 1);
+        typewriterElement.appendChild(cursor);
         charIndex++;
         typingDelay = getRandomDelay(80, 40); // Base 80ms, +/- 40ms variation
-    }
-
-    // Add cursor blink effect during longer pauses
-    const cursor = document.querySelector('.cursor');
-    if (cursor) {
-        cursor.style.opacity = isDeleting ? '0.5' : '1';
     }
 
     // Check if word is complete

@@ -502,6 +502,7 @@ h2 {
     display: flex;
     align-items: center;
     white-space: nowrap;
+    overflow: hidden;
 }
 
 .dynamic-text > span {
@@ -510,15 +511,17 @@ h2 {
 
 .typewriter {
     color: #64ffda;
-    min-width: 10ch;
+    min-width: 20ch;
     margin-left: 8px;
     position: relative;
+    white-space: nowrap;
 }
 
 .cursor {
     color: #64ffda;
     font-weight: bold;
-    margin-left: 2px;
+    display: inline-block;
+    margin-left: 1px;
     animation: blink 0.7s infinite;
     user-select: none;
 }
