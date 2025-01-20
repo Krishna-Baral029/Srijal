@@ -12,36 +12,61 @@ function loadTypedJs() {
     });
 }
 
-// Initialize Typed.js
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing Typed.js...');
+// Custom typewriter animation
+const texts = [
+    'Web Developer 🌐',
+    'UI Designer 🎨',
+    'Full-Stack Developer ⚡',
+    'Hotel Management Student 🏨'
+];
+
+let textIndex = 0;
+let charIndex = 0;
+let isDeleting = false;
+let typingDelay = 100;
+
+function typeWriter() {
+    const currentText = texts[textIndex];
+    const typewriterElement = document.querySelector('.typewriter');
     
-    const element = document.getElementById('typed-text');
-    if (!element) {
-        console.error('Typed element not found');
+    if (!typewriterElement) {
+        console.error('Typewriter element not found');
         return;
     }
 
-    try {
-        const typed = new Typed('#typed-text', {
-            strings: [
-                'Web Developer 🌐',
-                'UI Designer 🎨',
-                'Full-Stack Developer ⚡',
-                'Hotel Management Student 🏨'
-            ],
-            typeSpeed: 50,
-            backSpeed: 30,
-            loop: true,
-            backDelay: 1500,
-            showCursor: true,
-            cursorChar: '|',
-            smartBackspace: true
-        });
-        console.log('Typed.js initialized successfully');
-    } catch (error) {
-        console.error('Error initializing Typed.js:', error);
+    if (isDeleting) {
+        // Deleting text
+        typewriterElement.textContent = currentText.substring(0, charIndex - 1);
+        charIndex--;
+        typingDelay = 50;
+    } else {
+        // Typing text
+        typewriterElement.textContent = currentText.substring(0, charIndex + 1);
+        charIndex++;
+        typingDelay = 100;
     }
+
+    // Check if word is complete
+    if (!isDeleting && charIndex === currentText.length) {
+        // Start deleting after delay
+        isDeleting = true;
+        typingDelay = 1500; // Wait before deleting
+    }
+
+    // Check if word is deleted
+    if (isDeleting && charIndex === 0) {
+        isDeleting = false;
+        textIndex = (textIndex + 1) % texts.length;
+        typingDelay = 500; // Wait before typing next word
+    }
+
+    setTimeout(typeWriter, typingDelay);
+}
+
+// Start the animation when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Starting typewriter animation...');
+    typeWriter();
 });
 
 // Initialize navigation
