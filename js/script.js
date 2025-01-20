@@ -1,24 +1,20 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Start typed.js immediately
-    const typedElement = document.querySelector('.typed-text');
-    if (typedElement) {
-        const typed = new Typed('.typed-text', {
-            strings: [
-                'Web Developer 🌐',  
-                'UI Designer 🎨',    
-                'Full-Stack Developer ⚡',  
-                'Hotel Management Student 🏨'   
-            ],
-            typeSpeed: 50,
-            backSpeed: 30,
-            loop: true,
-            backDelay: 1500,
-            showCursor: true,
-            cursorChar: '|',
-            startDelay: 0,
-            smartBackspace: true
-        });
-    }
+    // Initialize Typed.js
+    const typed = new Typed('.typed-text', {
+        strings: [
+            'Web Developer 🌐',
+            'UI Designer 🎨',
+            'Full-Stack Developer ⚡',
+            'Hotel Management Student 🏨'
+        ],
+        typeSpeed: 50,
+        backSpeed: 30,
+        loop: true,
+        backDelay: 1500,
+        showCursor: true,
+        cursorChar: '|',
+        smartBackspace: true
+    });
 
     // Move the page refresh code after typed.js initialization
     if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD) {
