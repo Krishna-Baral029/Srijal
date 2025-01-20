@@ -1,15 +1,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Typed.js
-    var typedElement = document.querySelector('.typed-text');
-    if (typedElement) {
-        var typed = new Typed('.typed-text', {
+    setTimeout(() => {
+        var typed = new Typed('#typed-text', {
             strings: [
                 'Web Developer 🌐',
                 'UI Designer 🎨',
                 'Full-Stack Developer ⚡',
                 'Hotel Management Student 🏨'
             ],
-            startDelay: 300,
             typeSpeed: 50,
             backSpeed: 30,
             loop: true,
@@ -17,16 +15,15 @@ document.addEventListener('DOMContentLoaded', function() {
             showCursor: true,
             cursorChar: '|',
             smartBackspace: true,
+            autoInsertCss: true,
             onBegin: function(self) {
-                console.log('Typed.js started');
+                console.log('Animation started');
             },
-            onStringTyped: function(arrayPos, self) {
-                console.log('String ' + arrayPos + ' typed');
+            onError: function(self) {
+                console.error('Typed.js error occurred');
             }
         });
-    } else {
-        console.error('Typed element not found');
-    }
+    }, 500);
 
     // Move the page refresh code after typed.js initialization
     if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD) {
