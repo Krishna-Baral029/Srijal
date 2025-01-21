@@ -20,22 +20,16 @@ async function loadFonts() {
             return;
         }
 
-        // Pre-load all text content with emojis
-        const textContent = [
-            '🌐', '🎨', '⚡', '🏨'
-        ];
-        
-        // Load emoji fonts and wait for them to be ready
+        // Load emoji fonts
         await Promise.all([
-            ...textContent.map(emoji => 
-                document.fonts.load(`10pt "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`, emoji)
-            )
+            document.fonts.load('10pt "Apple Color Emoji"'),
+            document.fonts.load('10pt "Segoe UI Emoji"'),
+            document.fonts.load('10pt "Segoe UI Symbol"'),
+            document.fonts.load('10pt "Noto Color Emoji"')
         ]);
 
         // Mark fonts as loaded
         document.body.classList.add('fonts-loaded');
-        
-        // Start typewriter only after fonts are loaded
         initTypewriter();
     } catch (err) {
         console.log('Font loading error:', err);
@@ -57,20 +51,6 @@ let charIndex = 0;
 let isDeleting = false;
 let typingDelay = 100;
 let typewriterInitialized = false;
-
-// Parse text and replace emoji with Twemoji
-function parseWithTwemoji(text) {
-    const tempDiv = document.createElement('div');
-    tempDiv.textContent = text;
-    twemoji.parse(tempDiv, {
-        folder: 'svg',
-        ext: '.svg',
-        callback: function(icon, options) {
-            return false; // Use default behavior
-        }
-    });
-    return tempDiv;
-}
 
 // Add random variation to typing speed for more natural effect
 function getRandomDelay(base, variation) {
@@ -99,26 +79,12 @@ function typeWriter() {
     }
 
     if (isDeleting) {
-        // Find emoji position
-        const emojiMatch = currentText.match(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u);
-        const emojiPosition = emojiMatch ? emojiMatch.index : currentText.length;
-        
-        if (charIndex > emojiPosition) {
-            const textContent = currentText.substring(0, charIndex - 1);
-            typewriterElement.innerHTML = '';
-            typewriterElement.appendChild(parseWithTwemoji(textContent));
-            typewriterElement.appendChild(cursor);
-            charIndex--;
-        } else {
-            isDeleting = false;
-            textIndex = (textIndex + 1) % texts.length;
-            charIndex = 0;
-        }
+        typewriterElement.textContent = currentText.substring(0, charIndex - 1);
+        typewriterElement.appendChild(cursor);
+        charIndex--;
         typingDelay = getRandomDelay(30, 20);
     } else {
-        const textContent = currentText.substring(0, charIndex + 1);
-        typewriterElement.innerHTML = '';
-        typewriterElement.appendChild(parseWithTwemoji(textContent));
+        typewriterElement.textContent = currentText.substring(0, charIndex + 1);
         typewriterElement.appendChild(cursor);
         charIndex++;
         typingDelay = getRandomDelay(80, 40);
@@ -128,6 +94,13 @@ function typeWriter() {
     if (!isDeleting && charIndex === currentText.length) {
         isDeleting = true;
         typingDelay = 2000; // Longer pause at the end
+    }
+
+    // Check if word is deleted
+    if (isDeleting && charIndex === 0) {
+        isDeleting = false;
+        textIndex = (textIndex + 1) % texts.length;
+        typingDelay = 500; // Pause before starting next word
     }
 
     setTimeout(typeWriter, typingDelay);
