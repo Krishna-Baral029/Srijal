@@ -12,8 +12,34 @@ function loadTypedJs() {
     });
 }
 
-// Preload emoji font
-document.fonts && document.fonts.load('10pt "Segoe UI Emoji"').catch(err => console.log('Emoji font loading error:', err));
+// Improved font loading
+async function loadFonts() {
+    try {
+        if (!document.fonts) {
+            // If browser doesn't support font loading API, just show content
+            document.body.classList.add('fonts-loaded');
+            return;
+        }
+
+        // Load emoji fonts
+        await Promise.all([
+            document.fonts.load('10pt "Apple Color Emoji"'),
+            document.fonts.load('10pt "Segoe UI Emoji"'),
+            document.fonts.load('10pt "Segoe UI Symbol"'),
+            document.fonts.load('10pt "Noto Color Emoji"')
+        ]);
+
+        // Mark fonts as loaded
+        document.body.classList.add('fonts-loaded');
+    } catch (err) {
+        console.log('Font loading error:', err);
+        // Show content anyway if there's an error
+        document.body.classList.add('fonts-loaded');
+    }
+}
+
+// Load fonts immediately
+loadFonts();
 
 // Custom typewriter animation
 const texts = [
