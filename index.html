@@ -25,11 +25,14 @@
         /* Improved emoji font handling */
         .typewriter {
             font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
-            visibility: hidden; /* Hide until fonts are loaded */
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
         }
         
         .fonts-loaded .typewriter {
             visibility: visible;
+            opacity: 1;
         }
 
         /* Hide emoji preload area */
@@ -39,6 +42,7 @@
             pointer-events: none;
             z-index: -1;
             font-size: 0;
+            visibility: hidden;
         }
     </style>
 </head>

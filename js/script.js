@@ -16,30 +16,33 @@ function loadTypedJs() {
 async function loadFonts() {
     try {
         if (!document.fonts) {
-            // If browser doesn't support font loading API, just show content
             document.body.classList.add('fonts-loaded');
             return;
         }
 
-        // Load emoji fonts
+        // Pre-load all text content with emojis
+        const textContent = [
+            '🌐', '🎨', '⚡', '🏨'
+        ];
+        
+        // Load emoji fonts and wait for them to be ready
         await Promise.all([
-            document.fonts.load('10pt "Apple Color Emoji"'),
-            document.fonts.load('10pt "Segoe UI Emoji"'),
-            document.fonts.load('10pt "Segoe UI Symbol"'),
-            document.fonts.load('10pt "Noto Color Emoji"')
+            ...textContent.map(emoji => 
+                document.fonts.load(`10pt "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`, emoji)
+            )
         ]);
 
         // Mark fonts as loaded
         document.body.classList.add('fonts-loaded');
+        
+        // Start typewriter only after fonts are loaded
+        initTypewriter();
     } catch (err) {
         console.log('Font loading error:', err);
-        // Show content anyway if there's an error
         document.body.classList.add('fonts-loaded');
+        initTypewriter();
     }
 }
-
-// Load fonts immediately
-loadFonts();
 
 // Custom typewriter animation
 const texts = [
@@ -53,10 +56,22 @@ let textIndex = 0;
 let charIndex = 0;
 let isDeleting = false;
 let typingDelay = 100;
+let typewriterInitialized = false;
 
 // Add random variation to typing speed for more natural effect
 function getRandomDelay(base, variation) {
     return Math.random() * variation + base;
+}
+
+function initTypewriter() {
+    if (typewriterInitialized) return;
+    typewriterInitialized = true;
+    
+    const typewriterElement = document.querySelector('.typewriter');
+    if (typewriterElement) {
+        typewriterElement.style.visibility = 'visible';
+        typeWriter();
+    }
 }
 
 function typeWriter() {
@@ -70,31 +85,32 @@ function typeWriter() {
     }
 
     if (isDeleting) {
-        // Deleting text - faster with slight variation
-        typewriterElement.textContent = currentText.substring(0, charIndex - 1);
+        // Find emoji position
+        const emojiMatch = currentText.match(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u);
+        const emojiPosition = emojiMatch ? emojiMatch.index : currentText.length;
+        
+        // Don't delete the emoji if we're at its position
+        if (charIndex > emojiPosition) {
+            typewriterElement.textContent = currentText.substring(0, charIndex - 1);
+            charIndex--;
+        } else {
+            isDeleting = false;
+            textIndex = (textIndex + 1) % texts.length;
+            charIndex = 0;
+        }
         typewriterElement.appendChild(cursor);
-        charIndex--;
-        typingDelay = getRandomDelay(30, 20); // Base 30ms, +/- 20ms variation
+        typingDelay = getRandomDelay(30, 20);
     } else {
-        // Typing text - slower with more variation
         typewriterElement.textContent = currentText.substring(0, charIndex + 1);
         typewriterElement.appendChild(cursor);
         charIndex++;
-        typingDelay = getRandomDelay(80, 40); // Base 80ms, +/- 40ms variation
+        typingDelay = getRandomDelay(80, 40);
     }
 
     // Check if word is complete
     if (!isDeleting && charIndex === currentText.length) {
-        // Start deleting after longer delay
         isDeleting = true;
         typingDelay = 2000; // Longer pause at the end
-    }
-
-    // Check if word is deleted
-    if (isDeleting && charIndex === 0) {
-        isDeleting = false;
-        textIndex = (textIndex + 1) % texts.length;
-        typingDelay = 500; // Pause before starting next word
     }
 
     setTimeout(typeWriter, typingDelay);
@@ -334,9 +350,11 @@ if (window.performance && window.performance.navigation.type === window.performa
     }
 }
 
+// Load fonts immediately
+loadFonts();
+
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Starting animations...');
-    typeWriter();
     initNavigation();
 });
