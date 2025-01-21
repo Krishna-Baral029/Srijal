@@ -58,6 +58,20 @@ let isDeleting = false;
 let typingDelay = 100;
 let typewriterInitialized = false;
 
+// Parse text and replace emoji with Twemoji
+function parseWithTwemoji(text) {
+    const tempDiv = document.createElement('div');
+    tempDiv.textContent = text;
+    twemoji.parse(tempDiv, {
+        folder: 'svg',
+        ext: '.svg',
+        callback: function(icon, options) {
+            return false; // Use default behavior
+        }
+    });
+    return tempDiv;
+}
+
 // Add random variation to typing speed for more natural effect
 function getRandomDelay(base, variation) {
     return Math.random() * variation + base;
@@ -89,19 +103,22 @@ function typeWriter() {
         const emojiMatch = currentText.match(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u);
         const emojiPosition = emojiMatch ? emojiMatch.index : currentText.length;
         
-        // Don't delete the emoji if we're at its position
         if (charIndex > emojiPosition) {
-            typewriterElement.textContent = currentText.substring(0, charIndex - 1);
+            const textContent = currentText.substring(0, charIndex - 1);
+            typewriterElement.innerHTML = '';
+            typewriterElement.appendChild(parseWithTwemoji(textContent));
+            typewriterElement.appendChild(cursor);
             charIndex--;
         } else {
             isDeleting = false;
             textIndex = (textIndex + 1) % texts.length;
             charIndex = 0;
         }
-        typewriterElement.appendChild(cursor);
         typingDelay = getRandomDelay(30, 20);
     } else {
-        typewriterElement.textContent = currentText.substring(0, charIndex + 1);
+        const textContent = currentText.substring(0, charIndex + 1);
+        typewriterElement.innerHTML = '';
+        typewriterElement.appendChild(parseWithTwemoji(textContent));
         typewriterElement.appendChild(cursor);
         charIndex++;
         typingDelay = getRandomDelay(80, 40);
@@ -350,11 +367,24 @@ if (window.performance && window.performance.navigation.type === window.performa
     }
 }
 
+// Load Twemoji
+const twemojiScript = document.createElement('script');
+twemojiScript.src = 'https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js';
+document.head.appendChild(twemojiScript);
+
 // Load fonts immediately
 loadFonts();
 
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Starting animations...');
+    // Wait a bit for Twemoji to load
+    setTimeout(() => {
+        if (window.twemoji) {
+            initTypewriter();
+        } else {
+            console.error('Twemoji not loaded');
+        }
+    }, 500);
     initNavigation();
 });

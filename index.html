@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dipesh Baral's Portfolio</title>
+    
+    <!-- Preload emoji fonts -->
+    <link rel="preload" as="font" href="https://cdn.jsdelivr.net/npm/twemoji-mozilla@2.5.4/font/twemoji-mozilla.woff2" crossorigin>
+    
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
+    <script src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js" crossorigin="anonymous"></script>
     <script src="/js/script.js" defer></script>
     <style>
         @supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
@@ -22,9 +27,8 @@
             background-clip: text;
         }
 
-        /* Improved emoji font handling */
+        /* Improved emoji handling with Twemoji */
         .typewriter {
-            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
             visibility: hidden;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
@@ -33,6 +37,15 @@
         .fonts-loaded .typewriter {
             visibility: visible;
             opacity: 1;
+        }
+
+        /* Style Twemoji images */
+        .typewriter img.emoji {
+            height: 1em;
+            width: 1em;
+            margin: 0 .05em 0 .1em;
+            vertical-align: -0.1em;
+            display: inline-block;
         }
 
         /* Hide emoji preload area */
