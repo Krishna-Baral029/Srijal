@@ -34,8 +34,7 @@ function getRandomDelay(base, variation) {
 }
 
 function typeWriter() {
-    const prefix = 'I\'m a  '; // Two spaces after "I'm a"
-    const currentText = prefix + texts[textIndex];
+    const currentText = texts[textIndex];  
     const typewriterElement = document.querySelector('.typewriter');
     const cursor = document.querySelector('.cursor');
     
@@ -46,13 +45,13 @@ function typeWriter() {
 
     if (isDeleting) {
         // Deleting text - faster with slight variation
-        typewriterElement.innerHTML = currentText.substring(0, charIndex - 1);
+        typewriterElement.textContent = currentText.substring(0, charIndex - 1);
         typewriterElement.appendChild(cursor);
         charIndex--;
         typingDelay = getRandomDelay(30, 20); // Base 30ms, +/- 20ms variation
     } else {
         // Typing text - slower with more variation
-        typewriterElement.innerHTML = currentText.substring(0, charIndex + 1);
+        typewriterElement.textContent = currentText.substring(0, charIndex + 1);
         typewriterElement.appendChild(cursor);
         charIndex++;
         typingDelay = getRandomDelay(80, 40); // Base 80ms, +/- 40ms variation
