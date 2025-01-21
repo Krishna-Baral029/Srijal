@@ -14,10 +14,10 @@ function loadTypedJs() {
 
 // Custom typewriter animation
 const texts = [
-    'I\'m a  Web Developer \u{1F310}',
-    'I\'m a  UI Designer \u{1F3A8}',
-    'I\'m a  Full-Stack Developer \u{26A1}',
-    'I\'m a  Hotel Management Student \u{1F3E8}'
+    'Web Developer \u{1F310}',
+    'UI Designer \u{1F3A8}',
+    'Full-Stack Developer \u{26A1}',
+    'Hotel Management Student \u{1F3E8}'
 ];
 
 let textIndex = 0;
