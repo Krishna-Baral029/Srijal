@@ -17,10 +17,10 @@ document.fonts && document.fonts.load('10pt "Segoe UI Emoji"').catch(err => cons
 
 // Custom typewriter animation
 const texts = [
-    'I\'m a  Web Developer &#127760;',
-    'I\'m a  UI Designer &#127912;',
-    'I\'m a  Full-Stack Developer &#9889;',
-    'I\'m a  Hotel Management Student &#127976;'
+    'Web Developer 🌐',
+    'UI Designer 🎨',
+    'Full-Stack Developer ⚡',
+    'Hotel Management Student 🏨'
 ];
 
 let textIndex = 0;
@@ -34,7 +34,8 @@ function getRandomDelay(base, variation) {
 }
 
 function typeWriter() {
-    const currentText = texts[textIndex];
+    const prefix = 'I\'m a  '; // Two spaces after "I'm a"
+    const currentText = prefix + texts[textIndex];
     const typewriterElement = document.querySelector('.typewriter');
     const cursor = document.querySelector('.cursor');
     
