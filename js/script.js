@@ -12,12 +12,15 @@ function loadTypedJs() {
     });
 }
 
+// Preload emoji font
+document.fonts && document.fonts.load('10pt "Segoe UI Emoji"').catch(err => console.log('Emoji font loading error:', err));
+
 // Custom typewriter animation
 const texts = [
-    ' Web Developer \u{1F310}',
-    ' UI Designer \u{1F3A8}',
-    ' Full-Stack Developer \u{26A1}',
-    'Hotel Management Student \u{1F3E8}'
+    'I\'m a  Web Developer &#127760;',
+    'I\'m a  UI Designer &#127912;',
+    'I\'m a  Full-Stack Developer &#9889;',
+    'I\'m a  Hotel Management Student &#127976;'
 ];
 
 let textIndex = 0;
@@ -42,13 +45,13 @@ function typeWriter() {
 
     if (isDeleting) {
         // Deleting text - faster with slight variation
-        typewriterElement.textContent = currentText.substring(0, charIndex - 1);
+        typewriterElement.innerHTML = currentText.substring(0, charIndex - 1);
         typewriterElement.appendChild(cursor);
         charIndex--;
         typingDelay = getRandomDelay(30, 20); // Base 30ms, +/- 20ms variation
     } else {
         // Typing text - slower with more variation
-        typewriterElement.textContent = currentText.substring(0, charIndex + 1);
+        typewriterElement.innerHTML = currentText.substring(0, charIndex + 1);
         typewriterElement.appendChild(cursor);
         charIndex++;
         typingDelay = getRandomDelay(80, 40); // Base 80ms, +/- 40ms variation
