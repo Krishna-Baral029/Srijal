@@ -4,7 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dipesh Baral's Portfolio</title>
-    <link rel="preload" as="font" href="https://fonts.gstatic.com/s/segoeui/v20/SegoeUI-Emoji.woff2" type="font/woff2" crossorigin>
+    
+    <!-- Preconnect and preload hints -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/segoeui/v20/SegoeUI-Emoji.woff2" as="font" type="font/woff2" crossorigin>
+    
+    <!-- Preload emoji fonts -->
+    <style>
+        @font-face {
+            font-family: 'Segoe UI Emoji';
+            src: local('Segoe UI Emoji');
+            font-display: block;
+        }
+        
+        @font-face {
+            font-family: 'Apple Color Emoji';
+            src: local('Apple Color Emoji');
+            font-display: block;
+        }
+        
+        .typewriter {
+            font-family: 'Poppins', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
+        }
+    </style>
+    
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,7 +48,6 @@
 
         /* Improved emoji font handling */
         .typewriter {
-            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
             visibility: hidden;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;

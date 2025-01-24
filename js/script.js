@@ -57,17 +57,36 @@ async function loadFonts() {
 
 // Custom typewriter animation
 const texts = [
-    'Web Developer 🌐',
-    'UI Designer 🎨',
-    'Full-Stack Developer ⚡',
-    'Hotel Management Student 🏨'
+    'Web Developer ',
+    'UI Designer ',
+    'Full-Stack Developer ',
+    'Hotel Management Student '
 ];
 
+const emojis = ['🌐', '🎨', '⚡', '🏨'];
 let textIndex = 0;
 let charIndex = 0;
 let isDeleting = false;
 let typingDelay = 100;
 let typewriterInitialized = false;
+
+// Preload emojis
+function preloadEmojis() {
+    const preloadContainer = document.createElement('div');
+    preloadContainer.style.cssText = 'position: absolute; opacity: 0; pointer-events: none;';
+    preloadContainer.setAttribute('aria-hidden', 'true');
+    
+    // Create separate span for each emoji with fallback
+    emojis.forEach(emoji => {
+        const span = document.createElement('span');
+        span.style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"';
+        span.textContent = emoji;
+        preloadContainer.appendChild(span);
+    });
+    
+    document.body.appendChild(preloadContainer);
+    return preloadContainer;
+}
 
 // Add random variation to typing speed for more natural effect
 function getRandomDelay(base, variation) {
@@ -86,7 +105,7 @@ function initTypewriter() {
 }
 
 function typeWriter() {
-    const currentText = texts[textIndex];  
+    const currentText = texts[textIndex] + emojis[textIndex];
     const typewriterElement = document.querySelector('.typewriter');
     const cursor = document.querySelector('.cursor');
     
@@ -96,12 +115,15 @@ function typeWriter() {
     }
 
     if (isDeleting) {
-        typewriterElement.textContent = currentText.substring(0, charIndex - 1);
+        // When deleting, don't include the emoji in the substring
+        const textWithoutEmoji = currentText.slice(0, -2); // Remove emoji and space
+        typewriterElement.textContent = textWithoutEmoji.substring(0, charIndex - 1);
         typewriterElement.appendChild(cursor);
         charIndex--;
         typingDelay = getRandomDelay(30, 20);
     } else {
-        typewriterElement.textContent = currentText.substring(0, charIndex + 1);
+        const displayText = currentText.substring(0, charIndex + 1);
+        typewriterElement.textContent = displayText;
         typewriterElement.appendChild(cursor);
         charIndex++;
         typingDelay = getRandomDelay(80, 40);
@@ -117,7 +139,7 @@ function typeWriter() {
     if (isDeleting && charIndex === 0) {
         isDeleting = false;
         textIndex = (textIndex + 1) % texts.length;
-        typingDelay = 500; // Pause before starting next word
+        typingDelay = 500;
     }
 
     setTimeout(typeWriter, typingDelay);
@@ -363,6 +385,38 @@ twemojiScript.src = 'https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.mi
 document.head.appendChild(twemojiScript);
 
 // Initialize everything when the DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    loadFonts();
+document.addEventListener('DOMContentLoaded', async () => {
+    // First preload the emojis
+    const preloadContainer = preloadEmojis();
+    
+    try {
+        // Check if the browser supports the Font Loading API
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+            
+            // Additional specific font loading
+            const fontPromises = [
+                document.fonts.load('10pt "Apple Color Emoji"'),
+                document.fonts.load('10pt "Segoe UI Emoji"'),
+                document.fonts.load('10pt "Segoe UI Symbol"'),
+                document.fonts.load('10pt "Noto Color Emoji"')
+            ];
+            
+            // Wait for fonts with a timeout
+            await Promise.race([
+                Promise.all(fontPromises),
+                new Promise(resolve => setTimeout(resolve, 2000))
+            ]);
+        }
+    } catch (err) {
+        console.log('Font loading error:', err);
+    } finally {
+        // Remove preload container
+        if (preloadContainer && preloadContainer.parentNode) {
+            preloadContainer.parentNode.removeChild(preloadContainer);
+        }
+        
+        // Start typewriter with a small delay to ensure DOM is ready
+        setTimeout(initTypewriter, 100);
+    }
 });
