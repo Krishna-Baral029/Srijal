@@ -12,7 +12,7 @@ function loadTypedJs() {
     });
 }
 
-// Improved font loading
+// Improved font loading with timeout
 async function loadFonts() {
     try {
         if (!document.fonts) {
@@ -20,17 +20,34 @@ async function loadFonts() {
             return;
         }
 
-        // Load emoji fonts
-        await Promise.all([
+        // Pre-load emojis in memory
+        const preloadSpan = document.createElement('span');
+        preloadSpan.style.opacity = '0';
+        preloadSpan.style.position = 'absolute';
+        preloadSpan.style.pointerEvents = 'none';
+        preloadSpan.textContent = '🌐🎨⚡🏨';
+        document.body.appendChild(preloadSpan);
+
+        // Load emoji fonts with timeout
+        const fontLoadPromises = [
             document.fonts.load('10pt "Apple Color Emoji"'),
             document.fonts.load('10pt "Segoe UI Emoji"'),
             document.fonts.load('10pt "Segoe UI Symbol"'),
             document.fonts.load('10pt "Noto Color Emoji"')
-        ]);
+        ];
 
+        // Add a timeout of 2 seconds for font loading
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, 2000));
+        await Promise.race([Promise.all(fontLoadPromises), timeoutPromise]);
+
+        // Cleanup
+        document.body.removeChild(preloadSpan);
+        
         // Mark fonts as loaded
         document.body.classList.add('fonts-loaded');
-        initTypewriter();
+        
+        // Initialize typewriter after a small delay to ensure fonts are rendered
+        setTimeout(initTypewriter, 100);
     } catch (err) {
         console.log('Font loading error:', err);
         document.body.classList.add('fonts-loaded');
@@ -345,19 +362,7 @@ const twemojiScript = document.createElement('script');
 twemojiScript.src = 'https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js';
 document.head.appendChild(twemojiScript);
 
-// Load fonts immediately
-loadFonts();
-
-// Initialize everything when DOM is ready
+// Initialize everything when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Starting animations...');
-    // Wait a bit for Twemoji to load
-    setTimeout(() => {
-        if (window.twemoji) {
-            initTypewriter();
-        } else {
-            console.error('Twemoji not loaded');
-        }
-    }, 500);
-    initNavigation();
+    loadFonts();
 });
