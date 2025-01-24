@@ -55,95 +55,127 @@ async function loadFonts() {
     }
 }
 
-// Custom typewriter animation
-const texts = [
-    'Web Developer ',
-    'UI Designer ',
-    'Full-Stack Developer ',
-    'Hotel Management Student '
-];
+// Custom typewriter animation with emoji support
+class TypeWriter {
+    constructor(element, texts, emojis) {
+        this.element = element;
+        this.texts = texts;
+        this.emojis = emojis;
+        this.textIndex = 0;
+        this.isDeleting = false;
+        this.preloadedEmojis = new Map();
+        this.initialized = false;
+    }
 
-const emojis = ['🌐', '🎨', '⚡', '🏨'];
-let textIndex = 0;
-let charIndex = 0;
-let isDeleting = false;
-let typingDelay = 100;
-let typewriterInitialized = false;
+    async preloadEmojis() {
+        const preloadContainer = document.createElement('div');
+        preloadContainer.style.cssText = 'position: absolute; visibility: hidden; pointer-events: none;';
+        document.body.appendChild(preloadContainer);
 
-// Preload emojis
-function preloadEmojis() {
-    const preloadContainer = document.createElement('div');
-    preloadContainer.style.cssText = 'position: absolute; opacity: 0; pointer-events: none;';
-    preloadContainer.setAttribute('aria-hidden', 'true');
-    
-    // Create separate span for each emoji with fallback
-    emojis.forEach(emoji => {
-        const span = document.createElement('span');
-        span.style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"';
-        span.textContent = emoji;
-        preloadContainer.appendChild(span);
-    });
-    
-    document.body.appendChild(preloadContainer);
-    return preloadContainer;
+        // Create hidden spans for each emoji
+        for (const emoji of this.emojis) {
+            const span = document.createElement('span');
+            span.style.opacity = '0';
+            span.style.position = 'absolute';
+            span.style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"';
+            span.textContent = emoji;
+            preloadContainer.appendChild(span);
+            this.preloadedEmojis.set(emoji, span.cloneNode(true));
+        }
+
+        // Wait for fonts to load
+        if (document.fonts && document.fonts.ready) {
+            try {
+                await document.fonts.ready;
+                const fontLoadPromises = [
+                    document.fonts.load('10pt "Apple Color Emoji"'),
+                    document.fonts.load('10pt "Segoe UI Emoji"'),
+                    document.fonts.load('10pt "Segoe UI Symbol"'),
+                    document.fonts.load('10pt "Noto Color Emoji"')
+                ];
+                await Promise.race([
+                    Promise.all(fontLoadPromises),
+                    new Promise(resolve => setTimeout(resolve, 2000))
+                ]);
+            } catch (err) {
+                console.log('Font loading error:', err);
+            }
+        }
+
+        // Cleanup preload container after a short delay
+        setTimeout(() => {
+            document.body.removeChild(preloadContainer);
+        }, 100);
+    }
+
+    async init() {
+        if (this.initialized) return;
+        await this.preloadEmojis();
+        this.initialized = true;
+        this.type();
+    }
+
+    type() {
+        const currentText = this.texts[this.textIndex];
+        const currentEmoji = this.emojis[this.textIndex];
+        const fullText = currentText + currentEmoji;
+        
+        // Get current display text length
+        const current = this.element.innerText;
+        const textLength = current.length;
+        
+        // Calculate new text
+        let newText;
+        if (this.isDeleting) {
+            newText = fullText.substring(0, textLength - 1);
+        } else {
+            newText = fullText.substring(0, textLength + 1);
+        }
+        
+        // Update text content
+        this.element.textContent = newText;
+        
+        // Add cursor
+        const cursor = document.createElement('span');
+        cursor.textContent = '|';
+        cursor.className = 'cursor';
+        this.element.appendChild(cursor);
+        
+        // Calculate typing speed
+        let typeSpeed = this.isDeleting ? 30 : 100;
+        
+        // Check if complete
+        if (!this.isDeleting && newText === fullText) {
+            typeSpeed = 2000; // Pause at end
+            this.isDeleting = true;
+        } else if (this.isDeleting && newText === '') {
+            this.isDeleting = false;
+            this.textIndex = (this.textIndex + 1) % this.texts.length;
+            typeSpeed = 500; // Pause before starting new word
+        }
+        
+        setTimeout(() => this.type(), typeSpeed);
+    }
 }
 
-// Add random variation to typing speed for more natural effect
-function getRandomDelay(base, variation) {
-    return Math.random() * variation + base;
-}
-
-function initTypewriter() {
-    if (typewriterInitialized) return;
-    typewriterInitialized = true;
-    
+// Initialize everything when the DOM is ready
+document.addEventListener('DOMContentLoaded', async () => {
     const typewriterElement = document.querySelector('.typewriter');
-    if (typewriterElement) {
-        typewriterElement.style.visibility = 'visible';
-        typeWriter();
-    }
-}
+    if (!typewriterElement) return;
 
-function typeWriter() {
-    const currentText = texts[textIndex] + emojis[textIndex];
-    const typewriterElement = document.querySelector('.typewriter');
-    const cursor = document.querySelector('.cursor');
+    const texts = [
+        'Web Developer ',
+        'UI Designer ',
+        'Full-Stack Developer ',
+        'Hotel Management Student '
+    ];
     
-    if (!typewriterElement || !cursor) {
-        console.error('Typewriter or cursor element not found');
-        return;
-    }
-
-    if (isDeleting) {
-        // When deleting, don't include the emoji in the substring
-        const textWithoutEmoji = currentText.slice(0, -2); // Remove emoji and space
-        typewriterElement.textContent = textWithoutEmoji.substring(0, charIndex - 1);
-        typewriterElement.appendChild(cursor);
-        charIndex--;
-        typingDelay = getRandomDelay(30, 20);
-    } else {
-        const displayText = currentText.substring(0, charIndex + 1);
-        typewriterElement.textContent = displayText;
-        typewriterElement.appendChild(cursor);
-        charIndex++;
-        typingDelay = getRandomDelay(80, 40);
-    }
-
-    // Check if word is complete
-    if (!isDeleting && charIndex === currentText.length) {
-        isDeleting = true;
-        typingDelay = 2000; // Longer pause at the end
-    }
-
-    // Check if word is deleted
-    if (isDeleting && charIndex === 0) {
-        isDeleting = false;
-        textIndex = (textIndex + 1) % texts.length;
-        typingDelay = 500;
-    }
-
-    setTimeout(typeWriter, typingDelay);
-}
+    const emojis = ['🌐', '🎨', '⚡', '🏨'];
+    
+    // Create and initialize typewriter
+    const typewriter = new TypeWriter(typewriterElement, texts, emojis);
+    await typewriter.init();
+});
 
 // Navigation button shine effect
 function initNavigation() {
@@ -383,40 +415,3 @@ if (window.performance && window.performance.navigation.type === window.performa
 const twemojiScript = document.createElement('script');
 twemojiScript.src = 'https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js';
 document.head.appendChild(twemojiScript);
-
-// Initialize everything when the DOM is ready
-document.addEventListener('DOMContentLoaded', async () => {
-    // First preload the emojis
-    const preloadContainer = preloadEmojis();
-    
-    try {
-        // Check if the browser supports the Font Loading API
-        if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready;
-            
-            // Additional specific font loading
-            const fontPromises = [
-                document.fonts.load('10pt "Apple Color Emoji"'),
-                document.fonts.load('10pt "Segoe UI Emoji"'),
-                document.fonts.load('10pt "Segoe UI Symbol"'),
-                document.fonts.load('10pt "Noto Color Emoji"')
-            ];
-            
-            // Wait for fonts with a timeout
-            await Promise.race([
-                Promise.all(fontPromises),
-                new Promise(resolve => setTimeout(resolve, 2000))
-            ]);
-        }
-    } catch (err) {
-        console.log('Font loading error:', err);
-    } finally {
-        // Remove preload container
-        if (preloadContainer && preloadContainer.parentNode) {
-            preloadContainer.parentNode.removeChild(preloadContainer);
-        }
-        
-        // Start typewriter with a small delay to ensure DOM is ready
-        setTimeout(initTypewriter, 100);
-    }
-});

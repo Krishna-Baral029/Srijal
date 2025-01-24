@@ -22,10 +22,6 @@
             src: local('Apple Color Emoji');
             font-display: block;
         }
-        
-        .typewriter {
-            font-family: 'Poppins', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
-        }
     </style>
     
     <link rel="stylesheet" href="/style.css">
@@ -48,24 +44,35 @@
 
         /* Improved emoji font handling */
         .typewriter {
-            visibility: hidden;
+            font-family: 'Poppins', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif !important;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
         }
         
-        .fonts-loaded .typewriter {
-            visibility: visible;
+        .typewriter.initialized {
             opacity: 1;
         }
-
-        /* Hide emoji preload area */
+        
         #emoji-preload {
             position: absolute;
-            opacity: 0;
+            visibility: hidden !important;
             pointer-events: none;
             z-index: -1;
-            font-size: 0;
-            visibility: hidden;
+            opacity: 0;
+            height: 0;
+            width: 0;
+            overflow: hidden;
+        }
+        
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            animation: blink 0.75s step-end infinite;
+        }
+        
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
         }
     </style>
 </head>
